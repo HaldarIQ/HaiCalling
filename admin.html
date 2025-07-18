@@ -114,22 +114,16 @@
         }
 
         .auth-button:active, .top-bar-btn:active, .nav-btn:active, .action-btn:active,
-        .call-control-btn:active, .modal-btn:active, .menu-item:active, .auth-tab:active {
+        .call-control-btn:active, .modal-btn:active, .menu-item:active {
             transform: scale(0.95); opacity: 0.8;
         }
         input, textarea { user-select: auto; }
 
         #auth-view { justify-content: center; align-items: center; padding: 40px; text-align: center; }
         #auth-view h1 { font-size: 2.5rem; font-weight: 700; color: var(--text-color);
-            text-shadow: 0 0 10px var(--glow-color); margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--glow-color); margin-bottom: 30px;
         }
-        .auth-tabs { display: flex; margin-bottom: 20px; border-radius: 50px; background-color: var(--secondary-bg); padding: 5px;}
-        .auth-tab { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-light);
-            font-size: 1rem; cursor: pointer; border-radius: 50px; transition: all 0.3s ease;
-        }
-        .auth-tab.active { background-color: var(--text-color); color: white; }
-
-        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 20px; }
         .input-field {
             width: 100%; padding: 15px 25px; border-radius: 50px; border: 2px solid var(--accent-color);
             background: transparent; color: var(--text-light); font-size: 1rem; outline: none; transition: all 0.3s ease;
@@ -139,10 +133,21 @@
         .auth-button {
             padding: 15px; border-radius: 50px; border: none; background: var(--text-color);
             color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .auth-button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-color); }
+        
+        .google-btn { background-color: #fff; color: #444; }
+        .google-btn:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .google-btn svg { width: 24px; height: 24px; }
+
+        .auth-divider { display: flex; align-items: center; text-align: center; color: var(--text-light); opacity: 0.7; margin: 20px 0; }
+        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--accent-color); }
+        .auth-divider:not(:empty)::before { margin-right: .5em; }
+        .auth-divider:not(:empty)::after { margin-left: .5em; }
+
         .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; }
-        #auth-error, #auth-error-signup, #phone-auth-error { color: var(--red-badge); margin-top: 10px; min-height: 20px; }
+        #auth-error, #auth-error-signup { color: var(--red-badge); margin-top: 15px; min-height: 20px; }
 
         .top-bar {
             width: 100%; padding: 15px 20px; display: flex; justify-content: space-between;
@@ -319,19 +324,18 @@
 
         <div id="auth-view" class="view active">
             <h1>HaiCalling</h1>
-            <div class="auth-tabs">
-                <button class="auth-tab active" data-form="login-form">Email</button>
-                <button class="auth-tab" data-form="phone-login-form">Phone</button>
-            </div>
-
             <div id="login-form" class="auth-form">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
                 <input type="password" id="login-password" class="input-field" placeholder="Password">
                 <button id="login-button" class="auth-button">Log In</button>
                 <p id="auth-error"></p>
                 <a class="form-switch-link" id="show-signup">Don't have an account? Sign Up</a>
+                <div class="auth-divider">OR</div>
+                <button id="google-signin-button" class="auth-button google-btn">
+                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.42-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
+                    Sign in with Google
+                </button>
             </div>
-
             <div id="signup-form" class="auth-form" style="display: none;">
                 <input type="email" id="signup-email" class="input-field" placeholder="Email">
                 <input type="password" id="signup-password" class="input-field" placeholder="Password">
@@ -339,17 +343,7 @@
                 <p id="auth-error-signup"></p>
                 <a class="form-switch-link" id="show-login">Already have an account? Log In</a>
             </div>
-
-            <div id="phone-login-form" class="auth-form" style="display: none;">
-                <input type="tel" id="phone-number-input" class="input-field" placeholder="Phone number with country code">
-                <div id="recaptcha-container"></div>
-                <button id="send-otp-button" class="auth-button">Send OTP</button>
-                <input type="text" id="otp-input" class="input-field" placeholder="Enter OTP" style="display: none;">
-                <button id="verify-otp-button" class="auth-button" style="display: none;">Verify OTP</button>
-                <p id="phone-auth-error"></p>
-            </div>
         </div>
-
 
         <div id="main-app-view" class="view">
             <header class="top-bar glass-ui">
@@ -465,7 +459,6 @@
         let currentUser = null, currentChatId = null, currentChatPeer = null;
         let messageListeners = {}, unreadListeners = {}, callListeners = {};
         let peerConnection, localStream, currentCallData, isSpeakerOn = false;
-        let confirmationResult = null;
 
         const homePage = document.getElementById('home-page');
         const notificationsPage = document.getElementById('notifications-page');
@@ -492,19 +485,13 @@
                         currentUser = { uid: user.uid, ...snapshot.val() };
                         initializeApp();
                     } else {
-                        // If user signed in with phone, they might not have an email property
-                        const userData = {
-                            name: user.displayName || 'New User',
-                            emoji: '😊',
-                            email: user.email || null,
-                            phone: user.phoneNumber, // Store phone number
-                            userId: `hai-${Math.random().toString(36).substr(2, 4)}`,
-                            callStatus: 'available'
-                        };
-                        db.ref(`users/${user.uid}`).set(userData).then(() => {
-                            currentUser = { uid: user.uid, ...userData };
-                            showModal('user-details-modal');
-                        });
+                        // User is new. Pre-fill name from Google if available.
+                        const nameInput = document.getElementById('user-name-input');
+                        if (user.displayName) {
+                            nameInput.value = user.displayName;
+                        }
+                        // Then show the modal to let them confirm/change name and set an emoji.
+                        showModal('user-details-modal');
                     }
                 });
             } else {
@@ -515,124 +502,43 @@
         });
 
         // --- Auth Form Switching ---
-        document.querySelectorAll('.auth-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                document.querySelectorAll('.auth-form').forEach(form => form.style.display = 'none');
-                document.getElementById(tab.dataset.form).style.display = 'flex';
-                // Reset other forms
-                document.getElementById('signup-form').style.display = 'none';
-                if (tab.dataset.form !== 'login-form') {
-                    document.getElementById('show-signup').style.display = 'none';
-                } else {
-                    document.getElementById('show-signup').style.display = 'block';
-                }
-
-            });
-        });
-
-        document.getElementById('show-signup').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('phone-login-form').style.display = 'none';
-            document.getElementById('signup-form').style.display = 'flex';
-            document.getElementById('show-signup').style.display = 'none';
-        });
-
-        document.getElementById('show-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('signup-form').style.display = 'none';
-            document.getElementById('login-form').style.display = 'flex';
-            document.getElementById('show-signup').style.display = 'block';
-        });
-
-
+        document.getElementById('show-signup').addEventListener('click', () => { document.getElementById('login-form').style.display = 'none'; document.getElementById('signup-form').style.display = 'flex'; });
+        document.getElementById('show-login').addEventListener('click', () => { document.getElementById('signup-form').style.display = 'none'; document.getElementById('login-form').style.display = 'flex'; });
+        
         // --- Email/Password Auth ---
         document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => document.getElementById('auth-error').textContent = err.message); });
         document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => document.getElementById('auth-error-signup').textContent = err.message); });
-
-        // --- Phone Number Auth ---
-        function setupRecaptcha() {
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'invisible',
-                'callback': (response) => {
-                    // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    console.log("reCAPTCHA solved");
-                }
-            });
-        }
-        setupRecaptcha(); // Set it up on load
-
-        document.getElementById('send-otp-button').addEventListener('click', () => {
-            const phoneNumber = document.getElementById('phone-number-input').value;
-            const appVerifier = window.recaptchaVerifier;
-            const errorEl = document.getElementById('phone-auth-error');
-            errorEl.textContent = '';
-
-            auth.signInWithPhoneNumber(phoneNumber, appVerifier)
-                .then((result) => {
-                    confirmationResult = result;
-                    document.getElementById('phone-number-input').style.display = 'none';
-                    document.getElementById('send-otp-button').style.display = 'none';
-                    document.getElementById('recaptcha-container').style.display = 'none';
-                    document.getElementById('otp-input').style.display = 'block';
-                    document.getElementById('verify-otp-button').style.display = 'block';
-                    errorEl.textContent = "OTP Sent!";
-                    errorEl.style.color = 'green';
-                }).catch((error) => {
-                    console.error("Error sending OTP:", error);
-                    errorEl.textContent = error.message;
-                    errorEl.style.color = 'var(--red-badge)';
-                    // Reset reCAPTCHA if it fails
-                    grecaptcha.reset(window.recaptchaWidgetId);
+        
+        // --- Google Sign-In ---
+        document.getElementById('google-signin-button').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .catch((error) => {
+                    document.getElementById('auth-error').textContent = `Google Sign-in Error: ${error.message}`;
                 });
+            // The onAuthStateChanged observer will handle success cases.
         });
-
-        document.getElementById('verify-otp-button').addEventListener('click', () => {
-            const code = document.getElementById('otp-input').value;
-            const errorEl = document.getElementById('phone-auth-error');
-            errorEl.textContent = '';
-
-            if (confirmationResult) {
-                confirmationResult.confirm(code).then((result) => {
-                    // User signed in successfully.
-                    const user = result.user;
-                    console.log("User signed in:", user);
-                    // The onAuthStateChanged observer will handle the rest.
-                }).catch((error) => {
-                    console.error("Error verifying OTP:", error);
-                    errorEl.textContent = "Invalid OTP. Please try again.";
-                    errorEl.style.color = 'var(--red-badge)';
-                });
-            }
-        });
-
-
+        
+        // --- Save User Details for NEW users ---
         document.getElementById('save-user-details-btn').addEventListener('click', () => {
             const name = document.getElementById('user-name-input').value.trim();
             const emoji = document.getElementById('user-emoji-input').value.trim();
             if (name && emoji) {
                 const user = auth.currentUser;
                 const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
-                const updates = {
+                const userData = {
                     name: name,
                     emoji: emoji,
-                    userId: currentUser.userId || userId, // Keep existing userId if present
+                    email: user.email,
+                    photoURL: user.photoURL || null,
+                    userId: userId,
                     callStatus: 'available'
                 };
-                 // If the user signed up with email, their email is already set
-                if(user.email) {
-                    updates.email = user.email;
-                }
-                 // If the user signed up with phone, their phone is already set
-                if(user.phoneNumber) {
-                    updates.phone = user.phoneNumber;
-                }
-                db.ref(`users/${user.uid}`).update(updates).then(() => {
-                     hideModal('user-details-modal');
-                     // Manually trigger reload of app data after profile save
-                     auth.onAuthStateChanged(auth.currentUser);
+
+                db.ref(`users/${user.uid}`).set(userData).then(() => {
+                    currentUser = { uid: user.uid, ...userData };
+                    hideModal('user-details-modal');
+                    initializeApp(); // Initialize the main app right after saving details
                 });
             }
         });
