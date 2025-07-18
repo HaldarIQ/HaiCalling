@@ -778,15 +778,13 @@
         function setupPeerConnection(callId, isCaller) {
             peerConnection = new RTCPeerConnection(servers);
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            peerConnection.ontrack = e => { 
-                if (currentCallData.isVideo) {
-                    document.getElementById('remote-video').srcObject = e.streams[0]; 
-                } else {
-                    const remoteAudio = new Audio();
-                    remoteAudio.srcObject = e.streams[0];
-                    remoteAudio.play();
-                }
+            
+            // FIXED: Simplified ontrack handler. This works for both video and audio calls.
+            // The <video> element can handle an audio-only stream.
+            peerConnection.ontrack = e => {
+                document.getElementById('remote-video').srcObject = e.streams[0];
             };
+            
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
             
             peerConnection.onconnectionstatechange = e => {
