@@ -478,6 +478,19 @@
         function openOverlayView(viewId) { document.getElementById(viewId).classList.add('active'); }
         function closeOverlayView(viewId) { document.getElementById(viewId).classList.remove('active'); }
 
+        // === NEW: Handle the result of the redirect after returning to the app ===
+        auth.getRedirectResult()
+            .then((result) => {
+                if (result.user) {
+                    // The onAuthStateChanged observer will handle the new user logic.
+                    // You can add a "Signing in..." message here if you want.
+                    document.getElementById('auth-error').textContent = "Successfully signed in. Loading...";
+                }
+            }).catch((error) => {
+                // Handle Errors here.
+                document.getElementById('auth-error').textContent = `Sign-in Error: ${error.message}`;
+            });
+
         auth.onAuthStateChanged(user => {
             if (user) {
                 db.ref(`users/${user.uid}`).once('value', snapshot => {
@@ -509,14 +522,10 @@
         document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => document.getElementById('auth-error').textContent = err.message); });
         document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => document.getElementById('auth-error-signup').textContent = err.message); });
         
-        // --- Google Sign-In ---
+        // === UPDATED: Use signInWithRedirect instead of signInWithPopup ===
         document.getElementById('google-signin-button').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .catch((error) => {
-                    document.getElementById('auth-error').textContent = `Google Sign-in Error: ${error.message}`;
-                });
-            // The onAuthStateChanged observer will handle success cases.
+            auth.signInWithRedirect(provider);
         });
         
         // --- Save User Details for NEW users ---
