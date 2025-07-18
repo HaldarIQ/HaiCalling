@@ -95,85 +95,44 @@
         }
 
         .view {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            pointer-events: none;
-            background-color: var(--primary-bg);
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+            display: flex; flex-direction: column; opacity: 0;
+            transform: translateX(100%); transition: opacity 0.4s ease, transform 0.4s ease;
+            pointer-events: none; background-color: var(--primary-bg);
         }
-
-        .view.active {
-            opacity: 1;
-            transform: translateX(0);
-            pointer-events: auto;
-        }
+        .view.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
         
-        #auth-view {
-            transform: translateX(0);
-            z-index: 200;
-        }
-
-        #main-app-view {
-             z-index: 10;
-        }
-
-        #chat-view, .call-ui-view {
-            z-index: 100;
-        }
+        #auth-view { transform: translateX(0); z-index: 200; }
+        #main-app-view { z-index: 10; }
+        #chat-view, .call-ui-view { z-index: 100; }
         
         .glass-ui {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: var(--glass-bg); backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.18);
             transition: background-color 0.5s ease;
         }
         
-        .auth-button:active, .top-bar-btn:active, .nav-btn:active, .action-btn:active, .call-control-btn:active, .modal-btn:active, .menu-item:active {
-            transform: scale(0.95);
-            opacity: 0.8;
+        .auth-button:active, .top-bar-btn:active, .nav-btn:active, .action-btn:active, 
+        .call-control-btn:active, .modal-btn:active, .menu-item:active {
+            transform: scale(0.95); opacity: 0.8;
         }
-        input, textarea {
-            user-select: auto; 
-        }
+        input, textarea { user-select: auto; }
 
-        #auth-view {
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            text-align: center;
+        #auth-view { justify-content: center; align-items: center; padding: 40px; text-align: center; }
+        #auth-view h1 { font-size: 2.5rem; font-weight: 700; color: var(--text-color);
+            text-shadow: 0 0 10px var(--glow-color); margin-bottom: 30px;
         }
-
-        #auth-view h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text-color);
-            text-shadow: 0 0 10px var(--glow-color);
-            margin-bottom: 30px;
-        }
-
         .auth-form { width: 100%; display: flex; flex-direction: column; gap: 20px; }
-
         .input-field {
             width: 100%; padding: 15px 25px; border-radius: 50px; border: 2px solid var(--accent-color);
             background: transparent; color: var(--text-light); font-size: 1rem; outline: none; transition: all 0.3s ease;
         }
-
         .input-field::placeholder { color: var(--text-light); opacity: 0.7; }
         .input-field:focus { border-color: var(--text-color); box-shadow: 0 0 15px var(--glow-color); }
-        
         .auth-button {
             padding: 15px; border-radius: 50px; border: none; background: var(--text-color);
             color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
         }
-
         .auth-button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-color); }
         .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; }
         #auth-error, #auth-error-signup { color: var(--red-badge); margin-top: 15px; min-height: 20px; }
@@ -189,15 +148,10 @@
         }
         .top-bar-btn svg { width: 24px; height: 24px; fill: var(--text-light); }
         
-        .content-area {
-            flex-grow: 1; overflow-y: auto; padding: 10px;
-            -webkit-overflow-scrolling: touch; 
-        }
+        .content-area { flex-grow: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
         .content-area::-webkit-scrollbar { display: none; }
-        
         .content-page { display: none; }
         .content-page.active { display: block; }
-
         .list-item {
             display: flex; align-items: center; padding: 15px; margin-bottom: 10px;
             background-color: var(--secondary-bg); border-radius: 15px; cursor: pointer;
@@ -209,14 +163,9 @@
         .list-item-name { font-weight: bold; color: var(--text-light); }
         .list-item-subtext { color: var(--text-light); opacity: 0.7; font-size: 0.9rem; }
         .list-item-actions { display: flex; align-items: center; gap: 10px; }
-        
-        .action-btn {
-            padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer;
-            color: white; font-weight: bold;
-        }
+        .action-btn { padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
         .accept-btn { background-color: #28a745; }
         .decline-btn { background-color: #dc3545; }
-
         .unread-badge {
             position: absolute; top: 10px; right: 10px; background-color: var(--red-badge);
             color: white; border-radius: 50%; width: 22px; height: 22px;
@@ -224,19 +173,23 @@
             font-size: 0.8rem; font-weight: bold;
         }
         
+        /* --- OPTIMIZED FOOTER --- */
         .bottom-nav {
-            width: 100%; padding: 10px 0; display: flex; justify-content: space-around;
-            align-items: center; flex-shrink: 0; z-index: 10;
+            width: 100%; padding: 5px 0; display: flex; justify-content: space-around;
+            align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
         }
-
         .nav-btn {
-            background: none; border: none; color: var(--text-light); opacity: 0.7; font-size: 1rem;
-            cursor: pointer; padding: 10px 15px; border-radius: 15px; transition: all 0.3s ease; position: relative;
+            background: none; border: none; flex: 1; height: 100%; display: flex; justify-content: center;
+            align-items: center; cursor: pointer; transition: all 0.3s ease; position: relative;
+            color: var(--text-light);
         }
-        .nav-btn.active { color: var(--text-color); opacity: 1; }
-
+        .nav-btn svg {
+            width: 26px; height: 26px; fill: currentColor; opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        .nav-btn.active svg { color: var(--text-color); opacity: 1; transform: scale(1.1); }
         .nav-badge {
-            position: absolute; top: 2px; right: 2px; background-color: var(--red-badge);
+            position: absolute; top: 8px; right: calc(50% - 25px); background-color: var(--red-badge);
             color: white; width: 18px; height: 18px; border-radius: 50%;
             font-size: 0.7rem; font-weight: bold; display: flex;
             align-items: center; justify-content: center;
@@ -263,7 +216,7 @@
 
         .message-bubble {
             max-width: 75%; padding: 10px 15px; border-radius: 20px;
-            margin-bottom: 10px; overflow-wrap: break-word; /* Improved text wrapping */
+            margin-bottom: 10px; overflow-wrap: break-word; 
         }
         .message-bubble.sent {
             background-color: var(--text-color); color: white;
@@ -276,20 +229,21 @@
         .message-timestamp { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; display: block; }
         
         .chat-input-area {
-            display: flex; padding: 10px; background-color: var(--secondary-bg); flex-shrink: 0;
-            border-top: 1px solid var(--accent-color); /* Visual separation */
+            display: flex; align-items: center; padding: 8px 12px; gap: 8px;
+            background-color: var(--secondary-bg); flex-shrink: 0; border-top: 1px solid var(--accent-color);
         }
         #message-input {
-            flex-grow: 1; padding: 12px 20px; border-radius: 50px; border: 2px solid var(--accent-color);
-            background: var(--primary-bg); color: var(--text-light); outline: none; font-size: 1rem;
-            user-select: text;
+            flex-grow: 1; height: 40px; padding: 0 20px; border-radius: 20px; 
+            border: 1px solid var(--accent-color); background: var(--primary-bg);
+            color: var(--text-light); outline: none; font-size: 1rem; user-select: text;
         }
+        #message-input:focus { border-color: var(--text-color); }
         #send-button {
-            margin-left: 10px; padding: 0 15px; border-radius: 50px; border: none;
-            background: var(--text-color); color: white; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
+            border: none; background: var(--text-color); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; padding: 0;
         }
-        #send-button svg { width: 24px; height: 24px; fill: white; }
+        #send-button svg { width: 20px; height: 20px; fill: white; }
 
         #call-view { background-color: #000; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
@@ -319,7 +273,7 @@
             display: flex; justify-content: center; align-items: center; cursor: pointer; color: white;
         }
         .end-call-btn { background-color: #e94560; }
-        .end-call-btn svg { width: 35px; height: 35px; fill: white; transform: rotate(135deg); } /* Rotate phone icon */
+        .end-call-btn svg { width: 35px; height: 35px; fill: white; transform: rotate(135deg); }
         .speaker-btn { background-color: rgba(255, 255, 255, 0.2); }
         .speaker-btn.active { background-color: var(--accent-color); }
         .speaker-btn svg { width: 30px; height: 30px; fill: white; }
@@ -337,10 +291,7 @@
         .modal-content h3 { color: var(--text-color); font-size: 1.5rem; margin-bottom: 10px; }
         .modal-content p { color: var(--text-light); opacity: 0.9; }
         .modal-btn-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .modal-btn {
-            flex: 1; padding: 12px; border-radius: 50px; border: none;
-            color: white; font-weight: bold; cursor: pointer;
-        }
+        .modal-btn { flex: 1; padding: 12px; border-radius: 50px; border: none; color: white; font-weight: bold; cursor: pointer; }
         .modal-btn.primary { background-color: var(--text-color); }
         .modal-btn.secondary { background-color: var(--accent-color); }
         #incoming-call-emoji { font-size: 4rem; }
@@ -380,11 +331,11 @@
         <div id="main-app-view" class="view">
             <header class="top-bar glass-ui">
                 <button class="top-bar-btn" id="menu-btn">
-                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"></path></svg>
                 </button>
                 <h2 id="main-title">HaiCalling</h2>
                 <button class="top-bar-btn" id="add-friend-btn">
-                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"></path></svg>
                 </button>
             </header>
             <main class="content-area">
@@ -393,26 +344,30 @@
                 <div id="calls-page" class="content-page"></div>
             </main>
             <nav class="bottom-nav glass-ui">
-                <button class="nav-btn active" data-page="home-page">Home</button>
+                <button class="nav-btn active" data-page="home-page">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+                </button>
                 <button class="nav-btn" data-page="notifications-page" id="notifications-nav-btn">
-                    Notifications
+                    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></svg>
                     <span id="notifications-badge" class="nav-badge" style="display: none;"></span>
                 </button>
-                <button class="nav-btn" data-page="calls-page">Calls</button>
+                <button class="nav-btn" data-page="calls-page">
+                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path></svg>
+                </button>
             </nav>
         </div>
         
         <div id="chat-view" class="view">
             <header class="chat-header">
                 <button class="back-btn" id="chat-back-btn">
-                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path></svg>
                 </button>
                 <span id="chat-contact-name" class="chat-contact-name">Contact Name</span>
                 <button class="call-action-btn" id="voice-call-btn">
-                     <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="currentColor"></path></svg>
                 </button>
                 <button class="call-action-btn" id="video-call-btn">
-                     <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"></path></svg>
                 </button>
             </header>
             <div id="messages-container-wrapper">
@@ -623,8 +578,8 @@
                     if (friendUid === currentUser.uid) { resultDiv.innerHTML = '<p>You cannot add yourself.</p>'; return; }
                     resultDiv.innerHTML = `<div class="list-item"><div class="list-item-emoji">${friendData.emoji}</div><div class="list-item-details"><div class="list-item-name">${friendData.name}</div></div><button class="action-btn" id="send-request-btn" style="background-color:var(--text-color);">Send Request</button></div>`;
                     document.getElementById('send-request-btn').onclick = () => {
-                        db.ref(`requests/${targetUid}/${currentUser.uid}`).set({ from: currentUser.uid, name: currentUser.name, emoji: currentUser.emoji, timestamp: firebase.database.ServerValue.TIMESTAMP });
-                        db.ref(`notifications/${targetUid}`).push().set({ type: 'friend_request', from: currentUser.uid, name: currentUser.name, read: false });
+                        db.ref(`requests/${friendUid}/${currentUser.uid}`).set({ from: currentUser.uid, name: currentUser.name, emoji: currentUser.emoji, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        db.ref(`notifications/${friendUid}`).push().set({ type: 'friend_request', from: currentUser.uid, name: currentUser.name, read: false });
                         resultDiv.innerHTML = '<p>Friend request sent!</p>';
                     };
                 } else { resultDiv.innerHTML = '<p>User not found.</p>'; }
