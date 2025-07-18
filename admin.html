@@ -2,51 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HaiCalling - Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>HaiCalling Mobile</title>
     <style>
-        /* --- Basic Setup & Theme --- */
+        /* --- Core Setup & Mobile Theme --- */
         :root {
             --background-dark: #121212;
             --surface-dark: #1e1e1e;
             --primary-blue: #0d6efd;
             --success-green: #198754;
             --danger-red: #dc3545;
-            --text-light: #e0e0e0;
+            --text-light: #f0f0f0;
             --text-muted: #888;
-            --glass-bg: rgba(40, 40, 40, 0.7);
+            --glass-bg: rgba(30, 30, 30, 0.7);
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            background-color: var(--background-dark);
-            color: var(--text-light);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        html, body {
+            height: 100%;
+            width: 100%;
             overflow: hidden;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-dark);
         }
 
-        /* --- Main App Container --- */
+        /* --- Main App Container (Simulates Phone Screen) --- */
         .app-container {
             width: 100%;
-            max-width: 1200px;
-            height: 100vh;
-            max-height: 90vh;
-            background-color: var(--surface-dark);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            display: flex;
-            overflow: hidden;
-        }
-
-        /* --- Video Call Area --- */
-        .call-area {
-            flex: 3;
+            height: 100%;
+            background-color: var(--background-dark);
             display: flex;
             flex-direction: column;
+            position: relative; /* For positioning overlays */
+        }
+
+        /* --- Call View (Main Screen) --- */
+        .call-view {
+            width: 100%;
+            height: 100%;
             position: relative;
             background-color: #000;
         }
@@ -59,20 +52,24 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.5rem;
             color: var(--text-muted);
-        }
-        
-        #remote-video::after {
-            content: 'Remote Video';
+            font-size: 1.2rem;
         }
 
+        #remote-video::after {
+            content: 'Waiting for call...';
+        }
+        
+        #remote-video.active::after {
+            content: ''; /* Hide text when video is active */
+        }
+        
         #local-video {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
-            width: 25%;
-            max-width: 200px;
+            width: 100px;
+            height: 150px;
             border-radius: 12px;
             border: 2px solid var(--glass-bg);
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -80,64 +77,38 @@
             background-color: #111;
         }
         
-        /* --- Controls Area --- */
-        .controls {
+        /* --- Chat View (Overlay Screen) --- */
+        .chat-view {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 50px;
-            padding: 10px;
-            display: flex;
-            gap: 15px;
-        }
-
-        .control-button {
-            background: none;
-            border: 1px solid transparent;
-            color: var(--text-light);
-            font-size: 1.5rem;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .control-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        #start-call { background-color: var(--success-green); }
-        #end-call { background-color: var(--danger-red); }
-
-        /* --- Chat & Side Panel --- */
-        .side-panel {
-            flex: 1;
-            min-width: 300px;
-            max-width: 350px;
-            background-color: #161616;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background-dark);
             display: flex;
             flex-direction: column;
-            border-left: 1px solid #333;
+            transform: translateY(100%); /* Start off-screen */
+            transition: transform 0.3s ease-in-out;
+            z-index: 10;
+        }
+        
+        .chat-view.active {
+            transform: translateY(0); /* Slide into view */
         }
 
         .chat-header {
-            padding: 20px;
+            padding: 15px 20px;
             font-size: 1.2rem;
             font-weight: bold;
-            border-bottom: 1px solid #333;
             text-align: center;
+            background-color: var(--surface-dark);
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
         }
 
         .chat-window {
             flex-grow: 1;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -149,6 +120,7 @@
             border-radius: 18px;
             max-width: 80%;
             word-wrap: break-word;
+            line-height: 1.4;
         }
         
         .chat-message.sent {
@@ -157,177 +129,190 @@
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
-
+        
         .chat-input-area {
             display: flex;
-            padding: 20px;
+            padding: 10px;
             gap: 10px;
+            background-color: var(--surface-dark);
             border-top: 1px solid #333;
+            flex-shrink: 0;
         }
-
+        
         #message-input {
             flex-grow: 1;
-            border: 1px solid #444;
-            background-color: #2c2c2c;
+            border: none;
+            background-color: #3a3a3a;
             border-radius: 20px;
             padding: 10px 15px;
             color: var(--text-light);
             outline: none;
         }
-        
-        #message-input:focus {
-            border-color: var(--primary-blue);
-        }
 
         #send-button {
             border: none;
-            background-color: var(--primary-blue);
-            color: white;
-            font-weight: bold;
-            border-radius: 20px;
-            padding: 0 20px;
+            background: none;
+            color: var(--primary-blue);
+            font-size: 1.8rem; /* Icon size */
             cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        #send-button:hover {
-            background-color: #0b5ed7;
+            padding: 5px;
         }
         
-        /* --- Responsive Design --- */
-        @media (max-width: 800px) {
-            .app-container {
-                flex-direction: column;
-                max-height: 100vh;
-                border-radius: 0;
-            }
-            .side-panel {
-                min-width: 100%;
-                flex: 1;
-            }
-            #local-video {
-                width: 30%;
-            }
+        /* --- Bottom Navigation Bar --- */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0 20px 0; /* Extra padding for home bar on iPhones */
+            z-index: 5;
         }
+
+        .nav-button {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.8rem; /* Icon size */
+            cursor: pointer;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-button:active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #start-call-btn { background-color: var(--success-green); }
+        #end-call-btn { background-color: var(--danger-red); display: none; } /* Initially hidden */
 
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Video Call Section -->
-        <section class="call-area">
+        
+        <!-- Main view for the video call -->
+        <div class="call-view">
             <video id="remote-video" playsinline autoplay></video>
             <video id="local-video" playsinline autoplay muted></video>
-
-            <div class="controls">
-                <button id="start-call" class="control-button" title="Start Call">📞</button>
-                <button id="end-call" class="control-button" title="End Call" style="display: none;">☎️</button>
-            </div>
-        </section>
-
-        <!-- Chatting Section -->
-        <section class="side-panel">
-            <header class="chat-header">Chat with Contact</header>
+        </div>
+        
+        <!-- Chat view that slides over the call view -->
+        <div class="chat-view" id="chat-view">
+            <header class="chat-header">Chat</header>
             <div class="chat-window" id="chat-window">
-                <!-- Messages will be appended here by JavaScript -->
+                <!-- Messages appended here -->
             </div>
             <div class="chat-input-area">
                 <input type="text" id="message-input" placeholder="Type a message...">
-                <button id="send-button">Send</button>
+                <button id="send-button" title="Send Message">➤</button>
             </div>
-        </section>
+        </div>
+
+        <!-- Fixed bottom navigation bar for controls -->
+        <nav class="bottom-nav">
+            <button id="toggle-chat-btn" class="nav-button" title="Toggle Chat">💬</button>
+            <button id="start-call-btn" class="nav-button" title="Start Call">📞</button>
+            <button id="end-call-btn" class="nav-button" title="End Call">☎️</button>
+        </nav>
+
     </div>
 
     <script>
         // === DOM Element References ===
-        const startCallButton = document.getElementById('start-call');
-        const endCallButton = document.getElementById('end-call');
+        const startCallButton = document.getElementById('start-call-btn');
+        const endCallButton = document.getElementById('end-call-btn');
+        const toggleChatButton = document.getElementById('toggle-chat-btn');
+        const chatView = document.getElementById('chat-view');
+        
         const localVideo = document.getElementById('local-video');
         const remoteVideo = document.getElementById('remote-video');
+        
         const chatWindow = document.getElementById('chat-window');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
 
         let localStream;
+        let isChatVisible = false;
 
         // === Call Logic ===
-        
-        // 1. Start a call: Get media, show in video elements, update UI
         const startCall = async () => {
             try {
-                // Get user's camera and microphone stream
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-                // Display local stream in the local-video element
                 localVideo.srcObject = localStream;
                 
-                // --- SIMULATION ---
-                // In a real app, you'd send the localStream to the other peer via WebRTC
-                // For this demo, we'll just show the same stream in the "remote" video element.
+                // --- SIMULATION of a connected call ---
                 remoteVideo.srcObject = localStream;
-                remoteVideo.style.display = 'block';
                 remoteVideo.classList.add('active');
 
-
-                // Update UI buttons
+                // Update UI: show end button, hide start button
                 startCallButton.style.display = 'none';
                 endCallButton.style.display = 'flex';
-
             } catch (error) {
                 console.error("Error accessing media devices.", error);
-                alert("Could not start call. Please ensure you have a camera/microphone and have granted permission.");
+                alert("Could not start call. Please grant camera and microphone permissions.");
             }
         };
 
-        // 2. End a call: Stop all tracks, clear video elements, update UI
         const endCall = () => {
             if (localStream) {
-                // Stop every track (camera, audio)
                 localStream.getTracks().forEach(track => track.stop());
             }
-
-            // Clear video elements
             localVideo.srcObject = null;
             remoteVideo.srcObject = null;
+            remoteVideo.classList.remove('active');
 
-            // Update UI buttons
+            // Update UI: show start button, hide end button
             startCallButton.style.display = 'flex';
             endCallButton.style.display = 'none';
         };
 
         // === Chat Logic ===
-        
-        // 3. Send a message: Create a message element and add it to the chat window
         const sendMessage = () => {
             const messageText = messageInput.value.trim();
             if (messageText === "") return;
 
-            // Create the message bubble
             const messageElement = document.createElement('div');
             messageElement.classList.add('chat-message', 'sent');
             messageElement.textContent = messageText;
-
-            // Add it to the chat window
             chatWindow.appendChild(messageElement);
 
-            // Clear the input and scroll to the bottom
             messageInput.value = "";
             chatWindow.scrollTop = chatWindow.scrollHeight;
         };
-        
+
+        // === UI Logic ===
+        const toggleChat = () => {
+            isChatVisible = !isChatVisible;
+            chatView.classList.toggle('active', isChatVisible);
+            
+            // Optional: Change button style when active
+            toggleChatButton.style.backgroundColor = isChatVisible ? 'rgba(255, 255, 255, 0.2)' : 'transparent';
+        };
+
         // === Event Listeners ===
         startCallButton.addEventListener('click', startCall);
         endCallButton.addEventListener('click', endCall);
+        toggleChatButton.addEventListener('click', toggleChat);
         sendButton.addEventListener('click', sendMessage);
         
-        // Allow sending message with the "Enter" key
         messageInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
+                event.preventDefault(); // Prevents new line in text area
                 sendMessage();
             }
         });
-
+        
     </script>
 </body>
 </html>
