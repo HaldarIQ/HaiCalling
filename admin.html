@@ -7,13 +7,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a1a2e">
-    
+
     <title>HaiCalling</title>
-    
+    <link rel="icon" type="image/x-icon" href="/icon.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -52,7 +53,8 @@
 
         html, body {
             height: 100%;
-            overflow: hidden; 
+            height: -webkit-fill-available;
+            overflow: hidden;
         }
 
         body {
@@ -81,8 +83,8 @@
         .app-container {
             width: 100%;
             height: 100%;
-            max-height: 100dvh; 
             max-width: 450px;
+            max-height: 900px;
             background: var(--primary-bg);
             border-radius: 20px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -100,28 +102,34 @@
             pointer-events: none; background-color: var(--primary-bg);
         }
         .view.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
-        
+
         #auth-view { transform: translateX(0); z-index: 200; }
         #main-app-view { z-index: 10; }
         #chat-view, .call-ui-view { z-index: 100; }
-        
+
         .glass-ui {
             background: var(--glass-bg); backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.18);
             transition: background-color 0.5s ease;
         }
-        
-        .auth-button:active, .top-bar-btn:active, .nav-btn:active, .action-btn:active, 
-        .call-control-btn:active, .modal-btn:active, .menu-item:active {
+
+        .auth-button:active, .top-bar-btn:active, .nav-btn:active, .action-btn:active,
+        .call-control-btn:active, .modal-btn:active, .menu-item:active, .auth-tab:active {
             transform: scale(0.95); opacity: 0.8;
         }
         input, textarea { user-select: auto; }
 
         #auth-view { justify-content: center; align-items: center; padding: 40px; text-align: center; }
         #auth-view h1 { font-size: 2.5rem; font-weight: 700; color: var(--text-color);
-            text-shadow: 0 0 10px var(--glow-color); margin-bottom: 30px;
+            text-shadow: 0 0 10px var(--glow-color); margin-bottom: 20px;
         }
-        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 20px; }
+        .auth-tabs { display: flex; margin-bottom: 20px; border-radius: 50px; background-color: var(--secondary-bg); padding: 5px;}
+        .auth-tab { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-light);
+            font-size: 1rem; cursor: pointer; border-radius: 50px; transition: all 0.3s ease;
+        }
+        .auth-tab.active { background-color: var(--text-color); color: white; }
+
+        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 15px; }
         .input-field {
             width: 100%; padding: 15px 25px; border-radius: 50px; border: 2px solid var(--accent-color);
             background: transparent; color: var(--text-light); font-size: 1rem; outline: none; transition: all 0.3s ease;
@@ -134,33 +142,33 @@
         }
         .auth-button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-color); }
         .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; }
-        #auth-error, #auth-error-signup { color: var(--red-badge); margin-top: 15px; min-height: 20px; }
-        
+        #auth-error, #auth-error-signup, #phone-auth-error { color: var(--red-badge); margin-top: 10px; min-height: 20px; }
+
         .top-bar {
-            width: 100%; padding: 10px 15px; display: flex; justify-content: space-between;
-            align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
+            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between;
+            align-items: center; flex-shrink: 0; z-index: 10;
         }
-        .top-bar h2 { font-size: 1.5rem; color: #ffffff; font-weight: 700; }
+        .top-bar h2 { font-size: 1.5rem; color: var(--text-light); font-weight: 700; }
         .top-bar-btn {
-            background: none; border: none; cursor: pointer;
+            background: none; border: none; color: var(--text-light); font-size: 1.5rem; cursor: pointer;
             width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
         }
-        .top-bar-btn svg { width: 24px; height: 24px; fill: #ffffff; } /* --- FIXED TO WHITE --- */
-        
+        .top-bar-btn svg { width: 24px; height: 24px; fill: var(--text-light); }
+
         .content-area { flex-grow: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
         .content-area::-webkit-scrollbar { display: none; }
         .content-page { display: none; }
         .content-page.active { display: block; }
         .list-item {
-            display: flex; align-items: center; padding: 12px 15px; margin-bottom: 10px;
+            display: flex; align-items: center; padding: 15px; margin-bottom: 10px;
             background-color: var(--secondary-bg); border-radius: 15px; cursor: pointer;
             transition: background-color 0.3s ease; position: relative;
         }
         .list-item:hover { background-color: var(--accent-color); }
         .list-item-emoji { font-size: 2rem; margin-right: 15px; }
-        .list-item-details { flex-grow: 1; overflow: hidden; }
-        .list-item-name { font-weight: bold; color: var(--text-light); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
-        .list-item-subtext { color: var(--text-light); opacity: 0.7; font-size: 0.9rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
+        .list-item-details { flex-grow: 1; }
+        .list-item-name { font-weight: bold; color: var(--text-light); }
+        .list-item-subtext { color: var(--text-light); opacity: 0.7; font-size: 0.9rem; }
         .list-item-actions { display: flex; align-items: center; gap: 10px; }
         .action-btn { padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
         .accept-btn { background-color: #28a745; }
@@ -171,15 +179,16 @@
             display: flex; justify-content: center; align-items: center;
             font-size: 0.8rem; font-weight: bold;
         }
-        
+
+        /* --- OPTIMIZED FOOTER --- */
         .bottom-nav {
-            width: 100%; display: flex; justify-content: space-around;
+            width: 100%; padding: 5px 0; display: flex; justify-content: space-around;
             align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
         }
         .nav-btn {
-            background: none; border: none; flex: 1; height: 100%; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease;
-            position: relative; color: var(--text-light);
+            background: none; border: none; flex: 1; height: 100%; display: flex; justify-content: center;
+            align-items: center; cursor: pointer; transition: all 0.3s ease; position: relative;
+            color: var(--text-light);
         }
         .nav-btn svg {
             width: 26px; height: 26px; fill: currentColor; opacity: 0.7;
@@ -187,25 +196,25 @@
         }
         .nav-btn.active svg { color: var(--text-color); opacity: 1; transform: scale(1.1); }
         .nav-badge {
-            position: absolute; top: 6px; right: calc(50% - 25px); background-color: var(--red-badge);
+            position: absolute; top: 8px; right: calc(50% - 25px); background-color: var(--red-badge);
             color: white; width: 18px; height: 18px; border-radius: 50%;
             font-size: 0.7rem; font-weight: bold; display: flex;
             align-items: center; justify-content: center;
         }
 
         .chat-header {
-            padding: 10px; display: flex; align-items: center;
-            background-color: var(--secondary-bg); flex-shrink: 0; height: 60px;
+            padding: 15px 10px; display: flex; align-items: center;
+            background-color: var(--secondary-bg); flex-shrink: 0;
         }
         .chat-header .back-btn, .call-action-btn {
-            background: none; border: none; color: var(--text-light); cursor: pointer; 
-            width: 44px; height: 44px; display:flex; justify-content: center; align-items: center;
+            background: none; border: none; color: var(--text-light); font-size: 1.5rem;
+            cursor: pointer; width: 44px; height: 44px; display:flex; justify-content: center; align-items: center;
         }
         .chat-header .back-btn { margin-right: 5px; }
         .call-action-btn { margin-left: 5px; }
-        .chat-header svg { width: 24px; height: 24px; fill: #ffffff; } /* --- FIXED TO WHITE --- */
+        .chat-header svg { width: 24px; height: 24px; fill: var(--text-light); }
         .chat-contact-name { font-weight: bold; font-size: 1.2rem; color: var(--text-light); flex-grow: 1; }
-        
+
         #messages-container-wrapper {
             flex-grow: 1; overflow-y: auto; display: flex;
             flex-direction: column-reverse; -webkit-overflow-scrolling: touch;
@@ -214,7 +223,7 @@
 
         .message-bubble {
             max-width: 75%; padding: 10px 15px; border-radius: 20px;
-            margin-bottom: 10px; overflow-wrap: break-word; 
+            margin-bottom: 10px; overflow-wrap: break-word;
         }
         .message-bubble.sent {
             background-color: var(--text-color); color: white;
@@ -225,13 +234,13 @@
             align-self: flex-start; border-bottom-left-radius: 5px;
         }
         .message-timestamp { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; display: block; }
-        
+
         .chat-input-area {
             display: flex; align-items: center; padding: 8px 12px; gap: 8px;
             background-color: var(--secondary-bg); flex-shrink: 0; border-top: 1px solid var(--accent-color);
         }
         #message-input {
-            flex-grow: 1; height: 40px; padding: 0 20px; border-radius: 20px; 
+            flex-grow: 1; height: 40px; padding: 0 20px; border-radius: 20px;
             border: 1px solid var(--accent-color); background: var(--primary-bg);
             color: var(--text-light); outline: none; font-size: 1rem; user-select: text;
         }
@@ -249,7 +258,7 @@
             position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px;
             border: 3px solid var(--text-color); border-radius: 10px; object-fit: cover; cursor: grab;
         }
-        
+
         #audio-call-view { justify-content: center; align-items: center; text-align: center; }
         #audio-call-view::before {
              content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -307,9 +316,14 @@
 <body>
 
     <div class="app-container">
-        
+
         <div id="auth-view" class="view active">
             <h1>HaiCalling</h1>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-form="login-form">Email</button>
+                <button class="auth-tab" data-form="phone-login-form">Phone</button>
+            </div>
+
             <div id="login-form" class="auth-form">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
                 <input type="password" id="login-password" class="input-field" placeholder="Password">
@@ -317,6 +331,7 @@
                 <p id="auth-error"></p>
                 <a class="form-switch-link" id="show-signup">Don't have an account? Sign Up</a>
             </div>
+
             <div id="signup-form" class="auth-form" style="display: none;">
                 <input type="email" id="signup-email" class="input-field" placeholder="Email">
                 <input type="password" id="signup-password" class="input-field" placeholder="Password">
@@ -324,16 +339,26 @@
                 <p id="auth-error-signup"></p>
                 <a class="form-switch-link" id="show-login">Already have an account? Log In</a>
             </div>
+
+            <div id="phone-login-form" class="auth-form" style="display: none;">
+                <input type="tel" id="phone-number-input" class="input-field" placeholder="Phone number with country code">
+                <div id="recaptcha-container"></div>
+                <button id="send-otp-button" class="auth-button">Send OTP</button>
+                <input type="text" id="otp-input" class="input-field" placeholder="Enter OTP" style="display: none;">
+                <button id="verify-otp-button" class="auth-button" style="display: none;">Verify OTP</button>
+                <p id="phone-auth-error"></p>
+            </div>
         </div>
+
 
         <div id="main-app-view" class="view">
             <header class="top-bar glass-ui">
                 <button class="top-bar-btn" id="menu-btn">
-                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"></path></svg>
                 </button>
                 <h2 id="main-title">HaiCalling</h2>
                 <button class="top-bar-btn" id="add-friend-btn">
-                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"></path></svg>
                 </button>
             </header>
             <main class="content-area">
@@ -343,29 +368,29 @@
             </main>
             <nav class="bottom-nav glass-ui">
                 <button class="nav-btn active" data-page="home-page">
-                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
                 </button>
                 <button class="nav-btn" data-page="notifications-page" id="notifications-nav-btn">
-                    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></svg>
                     <span id="notifications-badge" class="nav-badge" style="display: none;"></span>
                 </button>
                 <button class="nav-btn" data-page="calls-page">
-                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="currentColor"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path></svg>
                 </button>
             </nav>
         </div>
-        
+
         <div id="chat-view" class="view">
             <header class="chat-header">
                 <button class="back-btn" id="chat-back-btn">
-                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path></svg>
                 </button>
                 <span id="chat-contact-name" class="chat-contact-name">Contact Name</span>
                 <button class="call-action-btn" id="voice-call-btn">
-                     <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="currentColor"></path></svg>
                 </button>
                 <button class="call-action-btn" id="video-call-btn">
-                     <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"></path></svg>
                 </button>
             </header>
             <div id="messages-container-wrapper">
@@ -380,7 +405,7 @@
         </div>
 
     </div>
-    
+
     <div id="call-view" class="view call-ui-view">
         <video id="remote-video" autoplay playsinline></video>
         <video id="local-video" autoplay playsinline muted></video>
@@ -419,18 +444,19 @@
     <!-- Audio Elements -->
     <audio id="incoming-call-audio" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" loop></audio>
     <audio id="message-tone-audio" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU9vT19PAAC2e/j9+fT+5/v/8/r/4/sA9vr//fD99v7/+f4A/Pn7/v78+fj6+vj1+Pb5//z2+f/6+v3/+vn5/vz6+f77/vz/+v7/+v3/+/z9/Pz6/P/6+v78/f79/v7/+fn+9/3/+vv9/fn99/z/+v3/+/7/+//7/v3+9/3//f79/vv9/f7/+vz+9vz/+v/+/P/++/3//v3/+/z/+vz9+fn++/7++/7++/79/P38/f78/v3++/79/v3+/P3+/f/6/v7+/f37/vv+9/7/+/7/+v3/+/z9+/v9/vv9+Pv8/v/8/v/6/vv++v7/+v/+/f/6/v7/+vv9/v3/+/7++/z/+v7++/79/v7/+v3/+v3/+v7/+/79+/7+///++/7//v/8/v/++/7//v3/+/z/+v/+/v/6/v/++/7//v3/+/7++/7/+v3/+v/7/vv+"></audio>
-    
+
     <script>
     (() => {
         const firebaseConfig = {
-  apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
-  authDomain: "haicalling.firebaseapp.com",
-  databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "haicalling",
-  storageBucket: "haicalling.firebasestorage.app",
-  messagingSenderId: "379823659600",
-  appId: "1:379823659600:web:d86fb74951ce52206b4f55"
-};
+            // IMPORTANT: REPLACE WITH YOUR FIREBASE CONFIG
+            apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
+            authDomain: "haicalling.firebaseapp.com",
+            databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "haicalling",
+            storageBucket: "haicalling.appspot.com",
+            messagingSenderId: "379823659600",
+            appId: "1:379823659600:web:d86fb74951ce52206b4f55"
+        };
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -439,7 +465,8 @@
         let currentUser = null, currentChatId = null, currentChatPeer = null;
         let messageListeners = {}, unreadListeners = {}, callListeners = {};
         let peerConnection, localStream, currentCallData, isSpeakerOn = false;
-        
+        let confirmationResult = null;
+
         const homePage = document.getElementById('home-page');
         const notificationsPage = document.getElementById('notifications-page');
         const callsPage = document.getElementById('calls-page');
@@ -448,7 +475,7 @@
         const messagesContainer = document.getElementById('messages-container');
         const incomingCallAudio = document.getElementById('incoming-call-audio');
         const messageToneAudio = document.getElementById('message-tone-audio');
-        
+
         let activeView = 'auth-view';
         function showView(viewId) {
             document.getElementById(activeView)?.classList.remove('active');
@@ -464,7 +491,21 @@
                     if (snapshot.exists()) {
                         currentUser = { uid: user.uid, ...snapshot.val() };
                         initializeApp();
-                    } else { showModal('user-details-modal'); }
+                    } else {
+                        // If user signed in with phone, they might not have an email property
+                        const userData = {
+                            name: user.displayName || 'New User',
+                            emoji: '😊',
+                            email: user.email || null,
+                            phone: user.phoneNumber, // Store phone number
+                            userId: `hai-${Math.random().toString(36).substr(2, 4)}`,
+                            callStatus: 'available'
+                        };
+                        db.ref(`users/${user.uid}`).set(userData).then(() => {
+                            currentUser = { uid: user.uid, ...userData };
+                            showModal('user-details-modal');
+                        });
+                    }
                 });
             } else {
                 currentUser = null;
@@ -473,19 +514,126 @@
             }
         });
 
-        document.getElementById('show-signup').addEventListener('click', () => { document.getElementById('login-form').style.display = 'none'; document.getElementById('signup-form').style.display = 'block'; });
-        document.getElementById('show-login').addEventListener('click', () => { document.getElementById('signup-form').style.display = 'none'; document.getElementById('login-form').style.display = 'block'; });
-        
+        // --- Auth Form Switching ---
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.auth-form').forEach(form => form.style.display = 'none');
+                document.getElementById(tab.dataset.form).style.display = 'flex';
+                // Reset other forms
+                document.getElementById('signup-form').style.display = 'none';
+                if (tab.dataset.form !== 'login-form') {
+                    document.getElementById('show-signup').style.display = 'none';
+                } else {
+                    document.getElementById('show-signup').style.display = 'block';
+                }
+
+            });
+        });
+
+        document.getElementById('show-signup').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('phone-login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'flex';
+            document.getElementById('show-signup').style.display = 'none';
+        });
+
+        document.getElementById('show-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'flex';
+            document.getElementById('show-signup').style.display = 'block';
+        });
+
+
+        // --- Email/Password Auth ---
         document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => document.getElementById('auth-error').textContent = err.message); });
         document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => document.getElementById('auth-error-signup').textContent = err.message); });
-        
+
+        // --- Phone Number Auth ---
+        function setupRecaptcha() {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response) => {
+                    // reCAPTCHA solved, allow signInWithPhoneNumber.
+                    console.log("reCAPTCHA solved");
+                }
+            });
+        }
+        setupRecaptcha(); // Set it up on load
+
+        document.getElementById('send-otp-button').addEventListener('click', () => {
+            const phoneNumber = document.getElementById('phone-number-input').value;
+            const appVerifier = window.recaptchaVerifier;
+            const errorEl = document.getElementById('phone-auth-error');
+            errorEl.textContent = '';
+
+            auth.signInWithPhoneNumber(phoneNumber, appVerifier)
+                .then((result) => {
+                    confirmationResult = result;
+                    document.getElementById('phone-number-input').style.display = 'none';
+                    document.getElementById('send-otp-button').style.display = 'none';
+                    document.getElementById('recaptcha-container').style.display = 'none';
+                    document.getElementById('otp-input').style.display = 'block';
+                    document.getElementById('verify-otp-button').style.display = 'block';
+                    errorEl.textContent = "OTP Sent!";
+                    errorEl.style.color = 'green';
+                }).catch((error) => {
+                    console.error("Error sending OTP:", error);
+                    errorEl.textContent = error.message;
+                    errorEl.style.color = 'var(--red-badge)';
+                    // Reset reCAPTCHA if it fails
+                    grecaptcha.reset(window.recaptchaWidgetId);
+                });
+        });
+
+        document.getElementById('verify-otp-button').addEventListener('click', () => {
+            const code = document.getElementById('otp-input').value;
+            const errorEl = document.getElementById('phone-auth-error');
+            errorEl.textContent = '';
+
+            if (confirmationResult) {
+                confirmationResult.confirm(code).then((result) => {
+                    // User signed in successfully.
+                    const user = result.user;
+                    console.log("User signed in:", user);
+                    // The onAuthStateChanged observer will handle the rest.
+                }).catch((error) => {
+                    console.error("Error verifying OTP:", error);
+                    errorEl.textContent = "Invalid OTP. Please try again.";
+                    errorEl.style.color = 'var(--red-badge)';
+                });
+            }
+        });
+
+
         document.getElementById('save-user-details-btn').addEventListener('click', () => {
             const name = document.getElementById('user-name-input').value.trim();
             const emoji = document.getElementById('user-emoji-input').value.trim();
             if (name && emoji) {
                 const user = auth.currentUser;
                 const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
-                db.ref(`users/${user.uid}`).set({ name, emoji, email: user.email, userId, callStatus: 'available' }).then(() => hideModal('user-details-modal'));
+                const updates = {
+                    name: name,
+                    emoji: emoji,
+                    userId: currentUser.userId || userId, // Keep existing userId if present
+                    callStatus: 'available'
+                };
+                 // If the user signed up with email, their email is already set
+                if(user.email) {
+                    updates.email = user.email;
+                }
+                 // If the user signed up with phone, their phone is already set
+                if(user.phoneNumber) {
+                    updates.phone = user.phoneNumber;
+                }
+                db.ref(`users/${user.uid}`).update(updates).then(() => {
+                     hideModal('user-details-modal');
+                     // Manually trigger reload of app data after profile save
+                     auth.onAuthStateChanged(auth.currentUser);
+                });
             }
         });
 
@@ -493,7 +641,7 @@
             showView('main-app-view');
             setupPresence(); loadContacts(); loadNotifications(); listenForCalls(); loadCallHistory();
         }
-        
+
         function cleanupApp() {
             if (currentUser) {
                 db.ref(`contacts/${currentUser.uid}`).off();
@@ -505,14 +653,14 @@
             }
             homePage.innerHTML = ''; notificationsPage.innerHTML = ''; callsPage.innerHTML = '';
         }
-        
+
         function setupPresence() {
             const userStatusRef = db.ref(`/users/${currentUser.uid}/callStatus`);
             db.ref('.info/connected').on('value', snap => {
                 if (snap.val() === true) { userStatusRef.onDisconnect().set('available').then(() => userStatusRef.set('available')); }
             });
         }
-        
+
         function loadContacts() {
             db.ref(`contacts/${currentUser.uid}`).on('value', snapshot => {
                 homePage.innerHTML = '';
@@ -520,7 +668,7 @@
                 snapshot.forEach(child => db.ref(`users/${child.key}`).once('value', userSnap => { if(userSnap.exists()) displayContact(child.key, userSnap.val()); }));
             });
         }
-        
+
         function displayContact(friendUid, friendData) {
             const item = document.createElement('div'); item.className = 'list-item'; item.dataset.uid = friendUid;
             const chatId = getChatId(currentUser.uid, friendUid);
@@ -528,7 +676,7 @@
             item.addEventListener('click', () => openChat(friendUid, friendData));
             item.addEventListener('contextmenu', e => { e.preventDefault(); openContactOptions(friendUid, friendData); });
             homePage.appendChild(item);
-            
+
             if(unreadListeners[chatId]) unreadListeners[chatId].off();
             const unreadRef = db.ref(`unreadCounts/${currentUser.uid}/${chatId}`);
             unreadListeners[chatId] = unreadRef;
@@ -537,7 +685,7 @@
                 if (badge) { badge.textContent = snap.val(); badge.style.display = snap.val() > 0 ? 'flex' : 'none'; }
             });
         }
-        
+
         function openContactOptions(friendUid, friendData) {
             document.getElementById('contact-options-name').textContent = friendData.name;
             document.getElementById('contact-block-btn').onclick = () => { if(confirm(`Block ${friendData.name}?`)) { blockUser(friendUid); hideModal('contact-options-modal'); } };
@@ -593,7 +741,7 @@
                 notificationsBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
             });
         }
-        
+
         function displayNotification(notifId, notifData) {
             const item = document.createElement('div'); item.className = 'list-item';
             if (notifData.type === 'friend_request') {
@@ -601,7 +749,7 @@
             }
             notificationsPage.prepend(item);
         }
-        
+
         notificationsPage.addEventListener('click', e => {
             const d = e.target.dataset;
             if (e.target.classList.contains('accept-btn')) {
@@ -613,7 +761,7 @@
         });
 
         function getChatId(uid1, uid2) { return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`; }
-        
+
         function openChat(friendUid, friendData) {
             currentChatId = getChatId(currentUser.uid, friendUid);
             currentChatPeer = friendData;
@@ -632,14 +780,14 @@
                 if(s.val().senderId !== currentUser.uid && document.getElementById('chat-view').classList.contains('active')) messageToneAudio.play();
             });
         }
-        
+
         function displayMessage(msg) {
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
             bubble.innerHTML = `${msg.text}<span class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>`;
             messagesContainer.prepend(bubble);
         }
-        
+
         function sendMessage() {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
@@ -655,7 +803,7 @@
             if(messageListeners[currentChatId]) messageListeners[currentChatId].off();
             currentChatId = null; currentChatPeer = null; closeOverlayView('chat-view');
         });
-        
+
         const servers = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
         document.getElementById('voice-call-btn').addEventListener('click', () => initiateCall(false));
         document.getElementById('video-call-btn').addEventListener('click', () => initiateCall(true));
@@ -667,8 +815,8 @@
             const callId = db.ref('calls').push().key;
             currentCallData = { callId, callerId: currentUser.uid, callerInfo: { name: currentUser.name, emoji: currentUser.emoji }, receiverId: currentChatId.replace(currentUser.uid,'').replace('_',''), status: 'ringing', isVideo };
             localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            
-            if (isVideo) { openOverlayView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
+
+            if (isVideo) { openOverlayView('call-view'); document.getElementById('local-video').srcObject = localStream; }
             else {
                 openOverlayView('audio-call-view');
                 document.getElementById('audio-callee-emoji').textContent = currentChatPeer.emoji;
@@ -683,7 +831,7 @@
             await db.ref(`calls/${callId}`).set(currentCallData);
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
         }
-        
+
         function listenForCalls() {
             const incomingCallsRef = db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid);
             if(callListeners.incoming) callListeners.incoming.off();
@@ -699,13 +847,13 @@
                 }
             });
         }
-        
+
         document.getElementById('accept-call-btn').addEventListener('click', async () => {
             incomingCallAudio.pause(); hideModal('incoming-call-modal');
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
-            
+
             localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
-            if (currentCallData.isVideo) { openOverlayView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
+            if (currentCallData.isVideo) { openOverlayView('call-view'); document.getElementById('local-video').srcObject = localStream; }
             else {
                  openOverlayView('audio-call-view');
                  db.ref(`users/${currentCallData.callerId}`).once('value', s => {
@@ -715,14 +863,14 @@
                     document.getElementById('audio-call-status').textContent = 'Connecting...';
                  });
             }
-            
+
             setupPeerConnection(currentCallData.callId, false);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
             await db.ref(`calls/${currentCallData.callId}`).update({ status: 'answered', answer: { type: answer.type, sdp: answer.sdp } });
         });
-        
+
         document.getElementById('reject-call-btn').addEventListener('click', async () => {
              incomingCallAudio.pause(); hideModal('incoming-call-modal');
              await db.ref(`calls/${currentCallData.callId}`).update({ status: 'rejected' });
@@ -736,7 +884,7 @@
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
             listenForCallUpdates(callId, isCaller);
         }
-        
+
         function listenForCallUpdates(callId, isCaller) {
             const callRef = db.ref(`calls/${callId}`);
             if(callListeners[callId]) callListeners[callId].off();
@@ -754,11 +902,11 @@
             callListeners[`ice_${callId}`] = iceCandidateRef;
             iceCandidateRef.on('child_added', s => { if (s.exists()) peerConnection.addIceCandidate(new RTCIceCandidate(s.val())); });
         }
-        
+
         const endCall = () => { if (currentCallData) db.ref(`calls/${currentCallData.callId}`).update({ status: 'ended' }); }
         document.getElementById('end-video-call-btn').addEventListener('click', endCall);
         document.getElementById('end-audio-call-btn').addEventListener('click', endCall);
-        
+
         function cleanupCall() {
             if (peerConnection) { peerConnection.close(); peerConnection = null; }
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
@@ -775,12 +923,12 @@
             db.ref(`users/${currentUser.uid}/callStatus`).set('available');
             currentCallData = null;
         }
-        
+
         function showModal(modalId) { document.getElementById(modalId).classList.add('active'); }
         function hideModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
         function showAlert(title, msg) { document.getElementById('alert-title').textContent = title; document.getElementById('alert-message').textContent = msg; showModal('alert-modal'); }
         document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => el.closest('.modal-overlay').classList.remove('active')));
-        
+
         document.getElementById('menu-btn').addEventListener('click', () => showModal('menu-modal'));
         document.getElementById('menu-logout-btn').addEventListener('click', () => { auth.signOut(); hideModal('menu-modal'); });
         document.getElementById('menu-theme-btn').addEventListener('click', () => document.body.classList.toggle('light-mode'));
@@ -797,7 +945,7 @@
             if(newEmoji) { db.ref(`users/${currentUser.uid}/emoji`).set(newEmoji); currentUser.emoji = newEmoji; }
             hideModal('profile-modal');
         });
-        
+
         document.getElementById('menu-blocked-btn').addEventListener('click', async () => {
             hideModal('menu-modal'); const listEl = document.getElementById('blocked-users-list');
             listEl.innerHTML = 'Loading...'; showModal('blocked-users-modal');
@@ -814,7 +962,7 @@
                 });
             } else { listEl.innerHTML = '<p>No blocked users.</p>'; }
         });
-        
+
         document.getElementById('blocked-users-list').addEventListener('click', e => { if(e.target.dataset.unblockUid) db.ref(`blocked/${currentUser.uid}/${e.target.dataset.unblockUid}`).remove().then(()=>e.target.closest('.list-item').remove());});
 
         function logCall(status) {
@@ -824,7 +972,7 @@
                 db.ref(`callHistory/${currentUser.uid}`).push({ callType:currentCallData.isVideo?'video':'voice', timestamp:firebase.database.ServerValue.TIMESTAMP, direction:currentCallData.callerId===currentUser.uid?'outgoing':'incoming', peerId, peerName:s.val()?s.val().name:'Unknown', status });
             });
         }
-        
+
         function loadCallHistory() {
             db.ref(`callHistory/${currentUser.uid}`).orderByChild('timestamp').limitToLast(30).on('value', s => {
                 callsPage.innerHTML = '';
@@ -837,7 +985,7 @@
                 });
             });
         }
-        
+
         const localVideo = document.getElementById('local-video');
         let isDragging=false, dragOffsetX, dragOffsetY;
         localVideo.addEventListener('pointerdown', e => { isDragging=true;localVideo.style.cursor='grabbing';dragOffsetX=e.clientX-localVideo.offsetLeft;dragOffsetY=e.clientY-localVideo.offsetTop;localVideo.setPointerCapture(e.pointerId);});
@@ -849,7 +997,7 @@
             }
         });
         document.addEventListener('pointerup', e => { isDragging=false;localVideo.style.cursor='grab';localVideo.releasePointerCapture(e.pointerId);});
-        
+
         document.getElementById('speaker-btn').addEventListener('click', ()=>{isSpeakerOn=!isSpeakerOn;document.getElementById('speaker-btn').classList.toggle('active', isSpeakerOn);});
 
     })();
