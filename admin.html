@@ -61,8 +61,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* MODIFIED: New background gradient */
-            background: linear-gradient(to bottom, #00a79d, #1a1a2e 50%, #4f2683);
+            background: linear-gradient(135deg, #16213e, #0f3460, #e94560);
             background-size: 400% 400%;
             animation: gradientAnimation 15s ease infinite;
             color: var(--text-light);
@@ -86,8 +85,7 @@
             height: 100%;
             max-width: 450px;
             max-height: 900px;
-            /* MODIFIED: Made the container transparent to see the body background */
-            background: transparent;
+            background: var(--primary-bg);
             border-radius: 20px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             overflow: hidden;
@@ -101,9 +99,7 @@
             width: 100%; height: 100%; position: absolute; top: 0; left: 0;
             display: flex; flex-direction: column; opacity: 0;
             transform: translateX(100%); transition: opacity 0.4s ease, transform 0.4s ease;
-            pointer-events: none; 
-            /* MODIFIED: Made views transparent */
-            background-color: transparent;
+            pointer-events: none; background-color: var(--primary-bg);
         }
         .view.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
         
@@ -142,29 +138,6 @@
         .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; }
         #auth-error, #auth-error-signup { color: var(--red-badge); margin-top: 15px; min-height: 20px; }
         
-        /* ADDED: Styling for the new element */
-        #welcome-element {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-            color: white;
-            z-index: 999;
-        }
-        #welcome-element h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            text-shadow: 0 2px 15px rgba(0,0,0,0.5);
-            margin-bottom: 1rem;
-        }
-        #welcome-element p {
-            font-size: 1.2rem;
-            text-shadow: 0 1px 10px rgba(0,0,0,0.5);
-        }
-
-
         .top-bar {
             width: 100%; padding: 15px 20px; display: flex; justify-content: space-between;
             align-items: center; flex-shrink: 0; z-index: 10;
@@ -176,7 +149,7 @@
         }
         .top-bar-btn svg { width: 24px; height: 24px; fill: var(--text-light); }
         
-        .content-area { flex-grow: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; background-color: var(--primary-bg); }
+        .content-area { flex-grow: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
         .content-area::-webkit-scrollbar { display: none; }
         .content-page { display: none; }
         .content-page.active { display: block; }
@@ -201,7 +174,6 @@
             font-size: 0.8rem; font-weight: bold;
         }
         
-        /* --- OPTIMIZED FOOTER --- */
         .bottom-nav {
             width: 100%; padding: 5px 0; display: flex; justify-content: space-around;
             align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
@@ -239,7 +211,6 @@
         #messages-container-wrapper {
             flex-grow: 1; overflow-y: auto; display: flex;
             flex-direction: column-reverse; -webkit-overflow-scrolling: touch;
-             background-color: var(--primary-bg);
         }
         #messages-container { display: flex; flex-direction: column-reverse; padding: 15px; }
 
@@ -338,15 +309,8 @@
 <body>
 
     <div class="app-container">
-
-        <!-- ADDED: New welcome element -->
-        <div id="welcome-element" class="view active">
-            <h1>Welcome Back</h1>
-            <p>Your space is ready.</p>
-        </div>
         
-        <!-- MODIFIED: Removed 'active' class to show new element first -->
-        <div id="auth-view" class="view">
+        <div id="auth-view" class="view active">
             <h1>HaiCalling</h1>
             <div id="login-form" class="auth-form">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
@@ -461,14 +425,14 @@
     <script>
     (() => {
         const firebaseConfig = {
-  apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
-  authDomain: "haicalling.firebaseapp.com",
-  databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "haicalling",
-  storageBucket: "haicalling.firebasestorage.app",
-  messagingSenderId: "379823659600",
-  appId: "1:379823659600:web:d86fb74951ce52206b4f55"
-};
+          apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
+          authDomain: "haicalling.firebaseapp.com",
+          databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "haicalling",
+          storageBucket: "haicalling.firebasestorage.app",
+          messagingSenderId: "379823659600",
+          appId: "1:379823659600:web:d86fb74951ce52206b4f55"
+        };
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -487,8 +451,7 @@
         const incomingCallAudio = document.getElementById('incoming-call-audio');
         const messageToneAudio = document.getElementById('message-tone-audio');
         
-        // MODIFIED: Start on the new welcome element and go to auth after a delay
-        let activeView = 'welcome-element';
+        let activeView = 'auth-view';
         function showView(viewId) {
             document.getElementById(activeView)?.classList.remove('active');
             document.getElementById(viewId)?.classList.add('active');
@@ -508,12 +471,7 @@
             } else {
                 currentUser = null;
                 cleanupApp();
-                // MODIFIED: Delay showing auth view
-                setTimeout(() => {
-                    if (!auth.currentUser) { // Only switch if user is still not logged in
-                       showView('auth-view');
-                    }
-                }, 2500); // 2.5 second delay
+                showView('auth-view');
             }
         });
 
@@ -545,6 +503,7 @@
                 db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid).off();
                 Object.values(messageListeners).forEach(ref => ref.off());
                 Object.values(unreadListeners).forEach(ref => ref.off());
+                Object.keys(callListeners).forEach(key => callListeners[key].off());
                 messageListeners = {}; unreadListeners = {}; callListeners = {};
             }
             homePage.innerHTML = ''; notificationsPage.innerHTML = ''; callsPage.innerHTML = '';
@@ -552,8 +511,11 @@
         
         function setupPresence() {
             const userStatusRef = db.ref(`/users/${currentUser.uid}/callStatus`);
-            db.ref('.info/connected').on('value', snap => {
-                if (snap.val() === true) { userStatusRef.onDisconnect().set('available').then(() => userStatusRef.set('available')); }
+            const connectedRef = db.ref('.info/connected');
+            connectedRef.on('value', snap => {
+                if (snap.val() === true) {
+                    userStatusRef.onDisconnect().set('available').then(() => userStatusRef.set('available'));
+                }
             });
         }
         
@@ -660,7 +622,7 @@
         
         function openChat(friendUid, friendData) {
             currentChatId = getChatId(currentUser.uid, friendUid);
-            currentChatPeer = friendData;
+            currentChatPeer = {uid: friendUid, ...friendData};
             document.getElementById('chat-contact-name').textContent = friendData.name;
             messagesContainer.innerHTML = ''; openOverlayView('chat-view');
             db.ref(`unreadCounts/${currentUser.uid}/${currentChatId}`).set(0);
@@ -673,7 +635,9 @@
             messageListeners[currentChatId] = messagesRef;
             messagesRef.on('child_added', s => {
                 displayMessage(s.val());
-                if(s.val().senderId !== currentUser.uid && document.getElementById('chat-view').classList.contains('active')) messageToneAudio.play();
+                if(s.val().senderId !== currentUser.uid && document.getElementById('chat-view').classList.contains('active')) {
+                    messageToneAudio.play().catch(e => console.log("Audio play failed", e));
+                }
             });
         }
         
@@ -687,9 +651,9 @@
         function sendMessage() {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
-            if (text && currentChatId) {
+            if (text && currentChatId && currentChatPeer) {
                 db.ref(`messages/${currentChatId}`).push({ text, senderId: currentUser.uid, timestamp: firebase.database.ServerValue.TIMESTAMP });
-                db.ref(`unreadCounts/${currentChatId.replace(currentUser.uid,'').replace('_','')}/${currentChatId}`).transaction(c=>(c||0)+1);
+                db.ref(`unreadCounts/${currentChatPeer.uid}/${currentChatId}`).transaction(c=>(c||0)+1);
                 input.value = '';
             }
         }
@@ -705,12 +669,21 @@
         document.getElementById('video-call-btn').addEventListener('click', () => initiateCall(true));
 
         async function initiateCall(isVideo) {
-            const friendStatusSnap = await db.ref(`users/${currentChatId.replace(currentUser.uid,'').replace('_','')}/callStatus`).once('value');
+            if (!currentChatPeer) return;
+            const friendStatusSnap = await db.ref(`users/${currentChatPeer.uid}/callStatus`).once('value');
             if(friendStatusSnap.val() === 'busy'){ showAlert('User Busy', `${currentChatPeer.name} is on another call.`); return; }
 
             const callId = db.ref('calls').push().key;
-            currentCallData = { callId, callerId: currentUser.uid, callerInfo: { name: currentUser.name, emoji: currentUser.emoji }, receiverId: currentChatId.replace(currentUser.uid,'').replace('_',''), status: 'ringing', isVideo };
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
+            currentCallData = { callId, callerId: currentUser.uid, callerInfo: { name: currentUser.name, emoji: currentUser.emoji }, receiverId: currentChatPeer.uid, status: 'ringing', isVideo };
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
+            } catch (err) {
+                console.error("getUserMedia error:", err);
+                showAlert('Media Error', 'Could not access camera/microphone. Please check permissions.');
+                currentCallData = null;
+                return;
+            }
             
             if (isVideo) { openOverlayView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
             else {
@@ -719,13 +692,20 @@
                 document.getElementById('audio-callee-name').textContent = currentChatPeer.name;
                 document.getElementById('audio-call-status').textContent = 'Calling...';
             }
-            setupPeerConnection(callId, true);
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            currentCallData.offer = { type: offer.type, sdp: offer.sdp };
 
-            await db.ref(`calls/${callId}`).set(currentCallData);
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
+            setupPeerConnection(callId, true);
+
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                currentCallData.offer = { type: offer.type, sdp: offer.sdp };
+                await db.ref(`calls/${callId}`).set(currentCallData);
+            } catch(err) {
+                console.error("Error creating offer:", err);
+                showAlert('Call Error', 'Failed to initiate call.');
+                await cleanupCall();
+            }
         }
         
         function listenForCalls() {
@@ -733,22 +713,35 @@
             if(callListeners.incoming) callListeners.incoming.off();
             callListeners.incoming = incomingCallsRef;
             incomingCallsRef.on('child_added', async s => {
+                if (!s.exists()) return;
                 const callData = s.val();
-                if (callData && callData.status === 'ringing' && currentUser.callStatus !== 'busy') {
+                const userStatusSnap = await db.ref(`users/${currentUser.uid}/callStatus`).once('value');
+                if (callData && callData.status === 'ringing' && userStatusSnap.val() !== 'busy') {
                     currentCallData = { callId: s.key, ...callData };
                     document.getElementById('incoming-call-emoji').textContent = callData.callerInfo.emoji;
                     document.getElementById('incoming-call-name').textContent = `${callData.callerInfo.name} is calling...`;
                     document.getElementById('incoming-call-type').textContent = callData.isVideo ? 'Video Call' : 'Voice Call';
-                    showModal('incoming-call-modal'); incomingCallAudio.play();
+                    showModal('incoming-call-modal'); 
+                    incomingCallAudio.play().catch(e=>console.log("Audio play failed", e));
                 }
             });
         }
         
         document.getElementById('accept-call-btn').addEventListener('click', async () => {
             incomingCallAudio.pause(); hideModal('incoming-call-modal');
+            if (!currentCallData) return;
+
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
             
-            localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
+            } catch(err) {
+                console.error("getUserMedia error on accept:", err);
+                showAlert('Media Error', 'Could not access camera/microphone. Please check permissions.');
+                db.ref(`calls/${currentCallData.callId}`).update({ status: 'failed' });
+                return;
+            }
+
             if (currentCallData.isVideo) { openOverlayView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
             else {
                  openOverlayView('audio-call-view');
@@ -761,23 +754,47 @@
             }
             
             setupPeerConnection(currentCallData.callId, false);
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            await db.ref(`calls/${currentCallData.callId}`).update({ status: 'answered', answer: { type: answer.type, sdp: answer.sdp } });
+            
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                await db.ref(`calls/${currentCallData.callId}`).update({ status: 'answered', answer: { type: answer.type, sdp: answer.sdp } });
+            } catch(err) {
+                console.error("Error accepting call:", err);
+                showAlert("Call Error", "Failed to connect the call.");
+                await cleanupCall();
+            }
         });
         
         document.getElementById('reject-call-btn').addEventListener('click', async () => {
              incomingCallAudio.pause(); hideModal('incoming-call-modal');
+             if (!currentCallData) return;
              await db.ref(`calls/${currentCallData.callId}`).update({ status: 'rejected' });
-             logCall('rejected'); currentCallData = null;
+             logCall('rejected'); 
+             currentCallData = null;
         });
 
         function setupPeerConnection(callId, isCaller) {
             peerConnection = new RTCPeerConnection(servers);
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            peerConnection.ontrack = e => { if (currentCallData.isVideo) document.getElementById('remote-video').srcObject = e.streams[0]; };
+            peerConnection.ontrack = e => { 
+                if (currentCallData.isVideo) {
+                    document.getElementById('remote-video').srcObject = e.streams[0]; 
+                } else {
+                    const remoteAudio = new Audio();
+                    remoteAudio.srcObject = e.streams[0];
+                    remoteAudio.play();
+                }
+            };
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
+            
+            peerConnection.onconnectionstatechange = e => {
+                if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'closed' || peerConnection.connectionState === 'failed') {
+                    endCall();
+                }
+            };
+
             listenForCallUpdates(callId, isCaller);
         }
         
@@ -785,38 +802,73 @@
             const callRef = db.ref(`calls/${callId}`);
             if(callListeners[callId]) callListeners[callId].off();
             callListeners[callId] = callRef;
+
             callRef.on('value', async s => {
-                const callData = s.val(); if (!callData) { cleanupCall(); return; }
-                if (isCaller && callData.answer && !peerConnection.currentRemoteDescription) await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.answer));
-                if (callData.status === 'answered' && document.getElementById('audio-call-status')) document.getElementById('audio-call-status').textContent = 'Connected';
-                if (callData.status === 'rejected' || callData.status === 'ended') { logCall(callData.status); }
+                if (!s.exists()) {
+                    await cleanupCall();
+                    return;
+                }
+                const callData = s.val();
+                
+                if ((callData.status === 'rejected' || callData.status === 'ended') && currentCallData) {
+                    logCall(callData.status);
+                    await cleanupCall();
+                    return;
+                }
+                
+                if (isCaller && callData.answer && peerConnection && !peerConnection.currentRemoteDescription) {
+                    try {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.answer));
+                    } catch (err) { console.error("Error setting remote description:", err); }
+                }
+
+                if (callData.status === 'answered' && document.getElementById('audio-call-status')) {
+                    document.getElementById('audio-call-status').textContent = 'Connected';
+                }
             });
 
             const peerId = isCaller ? currentCallData.receiverId : currentCallData.callerId;
             const iceCandidateRef = db.ref(`iceCandidates/${callId}/${peerId}`);
             if(callListeners[`ice_${callId}`]) callListeners[`ice_${callId}`].off();
             callListeners[`ice_${callId}`] = iceCandidateRef;
-            iceCandidateRef.on('child_added', s => { if (s.exists()) peerConnection.addIceCandidate(new RTCIceCandidate(s.val())); });
+            iceCandidateRef.on('child_added', s => { 
+                if (s.exists() && peerConnection && peerConnection.currentRemoteDescription) {
+                    try {
+                         peerConnection.addIceCandidate(new RTCIceCandidate(s.val()));
+                    } catch(err) { console.error("Error adding ICE candidate:", err); }
+                }
+            });
         }
         
         const endCall = () => { if (currentCallData) db.ref(`calls/${currentCallData.callId}`).update({ status: 'ended' }); }
         document.getElementById('end-video-call-btn').addEventListener('click', endCall);
         document.getElementById('end-audio-call-btn').addEventListener('click', endCall);
         
-        function cleanupCall() {
+        async function cleanupCall() {
+            if (!currentCallData && !peerConnection) return; 
+
             if (peerConnection) { peerConnection.close(); peerConnection = null; }
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            
             if (currentCallData) {
-                db.ref(`calls/${currentCallData.callId}`).off();
-                db.ref(`iceCandidates/${currentCallData.callId}/${currentUser.uid}`).off();
-                const peerId = currentCallData.callerId === currentUser.uid ? currentCallData.receiverId : currentCallData.callerId;
-                db.ref(`iceCandidates/${currentCallData.callId}/${peerId}`).off();
-                db.ref(`calls/${currentCallData.callId}`).remove();
-                db.ref(`iceCandidates/${currentCallData.callId}`).remove();
+                const callId = currentCallData.callId;
+                if(callListeners[callId]) callListeners[callId].off();
+                if(callListeners[`ice_${callId}`]) callListeners[`ice_${callId}`].off();
+                
+                if (currentUser.uid === currentCallData.callerId) {
+                     setTimeout(() => {
+                        db.ref(`calls/${callId}`).remove();
+                        db.ref(`iceCandidates/${callId}`).remove();
+                     }, 2000);
+                }
             }
-            closeOverlayView('call-view'); closeOverlayView('audio-call-view');
-            document.getElementById('local-video').srcObject = null; document.getElementById('remote-video').srcObject = null;
-            db.ref(`users/${currentUser.uid}/callStatus`).set('available');
+
+            closeOverlayView('call-view'); 
+            closeOverlayView('audio-call-view');
+            document.getElementById('local-video').srcObject = null; 
+            document.getElementById('remote-video').srcObject = null;
+            
+            await db.ref(`users/${currentUser.uid}/callStatus`).set('available');
             currentCallData = null;
         }
         
