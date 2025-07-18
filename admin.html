@@ -81,7 +81,6 @@
         .app-container {
             width: 100%;
             height: 100%;
-            /* Fix for smaller screen overflow */
             max-height: 100dvh; 
             max-width: 450px;
             background: var(--primary-bg);
@@ -141,12 +140,12 @@
             width: 100%; padding: 10px 15px; display: flex; justify-content: space-between;
             align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
         }
-        .top-bar h2 { font-size: 1.5rem; color: var(--text-light); font-weight: 700; }
+        .top-bar h2 { font-size: 1.5rem; color: #ffffff; font-weight: 700; }
         .top-bar-btn {
             background: none; border: none; cursor: pointer;
             width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
         }
-        .top-bar-btn svg { width: 24px; height: 24px; fill: var(--text-light); }
+        .top-bar-btn svg { width: 24px; height: 24px; fill: #ffffff; } /* --- FIXED TO WHITE --- */
         
         .content-area { flex-grow: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
         .content-area::-webkit-scrollbar { display: none; }
@@ -204,7 +203,7 @@
         }
         .chat-header .back-btn { margin-right: 5px; }
         .call-action-btn { margin-left: 5px; }
-        .chat-header svg { width: 24px; height: 24px; fill: var(--text-light); }
+        .chat-header svg { width: 24px; height: 24px; fill: #ffffff; } /* --- FIXED TO WHITE --- */
         .chat-contact-name { font-weight: bold; font-size: 1.2rem; color: var(--text-light); flex-grow: 1; }
         
         #messages-container-wrapper {
@@ -330,11 +329,11 @@
         <div id="main-app-view" class="view">
             <header class="top-bar glass-ui">
                 <button class="top-bar-btn" id="menu-btn">
-                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>
                 </button>
                 <h2 id="main-title">HaiCalling</h2>
                 <button class="top-bar-btn" id="add-friend-btn">
-                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
                 </button>
             </header>
             <main class="content-area">
@@ -359,14 +358,14 @@
         <div id="chat-view" class="view">
             <header class="chat-header">
                 <button class="back-btn" id="chat-back-btn">
-                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path></svg>
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
                 </button>
                 <span id="chat-contact-name" class="chat-contact-name">Contact Name</span>
                 <button class="call-action-btn" id="voice-call-btn">
-                     <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="currentColor"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path></svg>
                 </button>
                 <button class="call-action-btn" id="video-call-btn">
-                     <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="currentColor"></path></svg>
+                     <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"></path></svg>
                 </button>
             </header>
             <div id="messages-container-wrapper">
