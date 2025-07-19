@@ -618,799 +618,782 @@
     <audio id="message-tone-audio" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUAAAAAAAAAAAAAAAAAAAAA="></audio>
 
 <script>
-    // --- Firebase Configuration ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
-      authDomain: "haicalling.firebaseapp.com",
-      databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "haicalling",
-      storageBucket: "haicalling.appspot.com",
-      messagingSenderId: "379823659600",
-      appId: "1:379823659600:web:d86fb74951ce52206b4f55"
-    };
+    // FIX: Wrap entire script in DOMContentLoaded to prevent race conditions on page load.
+    document.addEventListener('DOMContentLoaded', () => {
 
-    // --- App Initialization ---
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
+          authDomain: "haicalling.firebaseapp.com",
+          databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "haicalling",
+          storageBucket: "haicalling.appspot.com",
+          messagingSenderId: "379823659600",
+          appId: "1:379823659600:web:d86fb74951ce52206b4f55"
+        };
 
-    // --- DOM Elements ---
-    const body = document.body;
-    const authView = document.getElementById('auth-view');
-    const mainAppView = document.getElementById('main-app-view');
-    const chatView = document.getElementById('chat-view');
-    // ... (Get all other necessary DOM elements)
-    // A comprehensive list would be too verbose here, elements are grabbed as needed in functions.
+        // --- App Initialization ---
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
 
-    // --- App State ---
-    let currentUser = null;
-    let currentChatId = null;
-    let currentContact = null;
-    let localStream = null;
-    let remoteStream = null;
-    let peerConnection = null;
-    let currentCallData = null;
-    let contactListeners = {};
-    let notificationListener = null;
+        // --- DOM Elements ---
+        const body = document.body;
+        const authView = document.getElementById('auth-view');
+        const mainAppView = document.getElementById('main-app-view');
+        const chatView = document.getElementById('chat-view');
+        
+        // --- App State ---
+        let currentUser = null;
+        let currentChatId = null;
+        let currentContact = null;
+        let localStream = null;
+        let remoteStream = null;
+        let peerConnection = null;
+        let currentCallData = null;
+        let contactListeners = {};
+        let notificationListener = null;
 
-    const rtcConfig = {
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    };
+        const rtcConfig = {
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
 
-    // --- AUTHENTICATION ---
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            db.ref(`users/${user.uid}`).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    currentUser = { uid: user.uid, ...snapshot.val() };
+        // --- AUTHENTICATION ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                db.ref(`users/${user.uid}`).once('value', snapshot => {
+                    if (snapshot.exists()) {
+                        currentUser = { uid: user.uid, ...snapshot.val() };
+                        initializeAppUI();
+                    } else {
+                        // New user, needs to set up profile
+                        currentUser = { uid: user.uid, email: user.email };
+                        document.getElementById('user-details-modal').classList.add('active');
+                    }
+                });
+            } else {
+                currentUser = null;
+                cleanupAppUI();
+                authView.classList.add('active');
+                mainAppView.classList.remove('active');
+            }
+        });
+        
+        // Form switching
+        document.getElementById('show-signup').addEventListener('click', () => {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'flex';
+        });
+        document.getElementById('show-login').addEventListener('click', () => {
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'flex';
+        });
+        
+        // Signup
+        document.getElementById('signup-button').addEventListener('click', () => {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const errorEl = document.getElementById('signup-error');
+            auth.createUserWithEmailAndPassword(email, password)
+                .catch(error => { errorEl.textContent = error.message; });
+        });
+        
+        // Login
+        document.getElementById('login-button').addEventListener('click', () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => { errorEl.textContent = error.message; });
+        });
+        
+        // Logout
+        document.getElementById('logout-button').addEventListener('click', () => {
+            if (currentUser) {
+                db.ref(`users/${currentUser.uid}/callStatus`).set('offline');
+            }
+            auth.signOut();
+        });
+
+        // --- PROFILE SETUP ---
+        document.getElementById('save-user-details-button').addEventListener('click', () => {
+            const name = document.getElementById('user-name-input').value.trim();
+            const emoji = document.getElementById('user-emoji-input').value.trim();
+            if (name && emoji) {
+                const userId = 'hai-' + Math.random().toString(36).substr(2, 4);
+                const userProfile = {
+                    name,
+                    emoji,
+                    email: currentUser.email,
+                    userId,
+                    callStatus: 'available'
+                };
+                db.ref(`users/${currentUser.uid}`).set(userProfile).then(() => {
+                    currentUser = { uid: currentUser.uid, ...userProfile };
+                    document.getElementById('user-details-modal').classList.remove('active');
                     initializeAppUI();
+                });
+            }
+        });
+
+        // --- UI INITIALIZATION & CLEANUP ---
+        function initializeAppUI() {
+            authView.classList.remove('active');
+            mainAppView.classList.add('active');
+            loadContacts();
+            listenForNotifications();
+            listenForCalls();
+            listenForCallHistory();
+
+            const userStatusRef = db.ref(`/users/${currentUser.uid}/callStatus`);
+            userStatusRef.set('available');
+            userStatusRef.onDisconnect().set('offline');
+            
+            if (localStorage.getItem('theme') === 'light') {
+                body.classList.add('light-mode');
+            }
+        }
+
+        function cleanupAppUI() {
+            // Detach all listeners
+            Object.values(contactListeners).forEach(ref => ref.off());
+            contactListeners = {};
+            if (notificationListener) notificationListener.off();
+            if(currentUser && currentUser.uid) {
+                db.ref(`/calls`).orderByChild('receiverId').equalTo(currentUser.uid).off();
+            }
+            // Clear UI
+            document.getElementById('home-list').innerHTML = '';
+            document.getElementById('notifications-list').innerHTML = '';
+            document.getElementById('calls-list').innerHTML = '';
+        }
+
+        // --- NAVIGATION ---
+        const navButtons = document.querySelectorAll('.bottom-nav button');
+        const contentLists = document.querySelectorAll('.content-list');
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                contentLists.forEach(list => list.style.display = 'none');
+                const listId = button.id.replace('nav-', '') + '-list';
+                document.getElementById(listId).style.display = 'block';
+            });
+        });
+
+        // --- FRIEND SYSTEM ---
+        document.getElementById('add-friend-button').addEventListener('click', () => {
+            document.getElementById('add-friend-modal').classList.add('active');
+            document.getElementById('friend-search-result').innerHTML = '';
+            document.getElementById('friend-id-input').value = '';
+        });
+
+        document.getElementById('search-friend-button').addEventListener('click', () => {
+            const friendId = document.getElementById('friend-id-input').value.trim();
+            const resultEl = document.getElementById('friend-search-result');
+            if (!friendId) return;
+
+            db.ref('users').orderByChild('userId').equalTo(friendId).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    const friendData = Object.entries(snapshot.val())[0];
+                    const [friendUid, friendProfile] = friendData;
+                    if (friendUid === currentUser.uid) {
+                        resultEl.innerHTML = `<p>You can't add yourself!</p>`;
+                        return;
+                    }
+                    resultEl.innerHTML = `
+                        <p>${friendProfile.emoji} ${friendProfile.name}</p>
+                        <button class="action-button" onclick="sendFriendRequest('${friendUid}', '${friendProfile.name}', '${friendProfile.emoji}')">Send Request</button>
+                    `;
                 } else {
-                    // New user, needs to set up profile
-                    currentUser = { uid: user.uid, email: user.email };
-                    document.getElementById('user-details-modal').classList.add('active');
+                    resultEl.innerHTML = `<p>User not found.</p>`;
                 }
             });
-        } else {
-            currentUser = null;
-            cleanupAppUI();
-            authView.classList.add('active');
-            mainAppView.classList.remove('active');
-        }
-    });
-    
-    // Form switching
-    document.getElementById('show-signup').addEventListener('click', () => {
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('signup-form').style.display = 'flex';
-    });
-    document.getElementById('show-login').addEventListener('click', () => {
-        document.getElementById('signup-form').style.display = 'none';
-        document.getElementById('login-form').style.display = 'flex';
-    });
-    
-    // Signup
-    document.getElementById('signup-button').addEventListener('click', () => {
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const errorEl = document.getElementById('signup-error');
-        auth.createUserWithEmailAndPassword(email, password)
-            .catch(error => { errorEl.textContent = error.message; });
-    });
-    
-    // Login
-    document.getElementById('login-button').addEventListener('click', () => {
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        const errorEl = document.getElementById('login-error');
-        auth.signInWithEmailAndPassword(email, password)
-            .catch(error => { errorEl.textContent = error.message; });
-    });
-    
-    // Logout
-    document.getElementById('logout-button').addEventListener('click', () => {
-        if (currentUser) {
-            db.ref(`users/${currentUser.uid}/callStatus`).set('offline');
-        }
-        auth.signOut();
-    });
+        });
 
-    // --- PROFILE SETUP ---
-    document.getElementById('save-user-details-button').addEventListener('click', () => {
-        const name = document.getElementById('user-name-input').value.trim();
-        const emoji = document.getElementById('user-emoji-input').value.trim();
-        if (name && emoji) {
-            const userId = 'hai-' + Math.random().toString(36).substr(2, 4);
-            const userProfile = {
-                name,
-                emoji,
-                email: currentUser.email,
-                userId,
-                callStatus: 'available'
-            };
-            db.ref(`users/${currentUser.uid}`).set(userProfile).then(() => {
-                currentUser = { uid: currentUser.uid, ...userProfile };
-                document.getElementById('user-details-modal').classList.remove('active');
-                initializeAppUI();
+        window.sendFriendRequest = function(targetUid, name, emoji) {
+            const requestRef = db.ref(`requests/${targetUid}/${currentUser.uid}`);
+            requestRef.set({
+                from: currentUser.uid,
+                name: currentUser.name,
+                emoji: currentUser.emoji,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            const notificationRef = db.ref(`notifications/${targetUid}`).push();
+            notificationRef.set({
+                type: 'friend_request',
+                from: currentUser.uid,
+                name: currentUser.name,
+                read: false
+            });
+            alert('Friend request sent!');
+            document.getElementById('add-friend-modal').classList.remove('active');
+        }
+        
+        window.acceptFriendRequest = function(requesterUid) {
+            // Add to each other's contacts
+            db.ref(`contacts/${currentUser.uid}/${requesterUid}`).set(true);
+            db.ref(`contacts/${requesterUid}/${currentUser.uid}`).set(true);
+            
+            // Remove request and notification
+            db.ref(`requests/${currentUser.uid}/${requesterUid}`).remove();
+            db.ref('notifications').child(currentUser.uid).orderByChild('from').equalTo(requesterUid).once('value', snapshot => {
+                snapshot.forEach(child => {
+                    if(child.val().type === 'friend_request') child.ref.remove();
+                });
             });
         }
-    });
 
-    // --- UI INITIALIZATION & CLEANUP ---
-    function initializeAppUI() {
-        authView.classList.remove('active');
-        mainAppView.classList.add('active');
-        loadContacts();
-        listenForNotifications();
-        listenForCalls();
-        listenForCallHistory();
-
-        const userStatusRef = db.ref(`/users/${currentUser.uid}/callStatus`);
-        userStatusRef.set('available');
-        userStatusRef.onDisconnect().set('offline');
-        
-        if (localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
+        window.rejectFriendRequest = function(requesterUid) {
+            db.ref(`requests/${currentUser.uid}/${requesterUid}`).remove();
+            db.ref('notifications').child(currentUser.uid).orderByChild('from').equalTo(requesterUid).once('value', snapshot => {
+                snapshot.forEach(child => {
+                    if(child.val().type === 'friend_request') child.ref.remove();
+                });
+            });
         }
-    }
 
-    function cleanupAppUI() {
-        // Detach all listeners
-        Object.values(contactListeners).forEach(ref => ref.off());
-        contactListeners = {};
-        if (notificationListener) notificationListener.off();
-        if(currentUser && currentUser.uid) {
-            db.ref(`/calls`).orderByChild('receiverId').equalTo(currentUser.uid).off();
+        // --- MESSAGING ---
+        function loadContacts() {
+            const contactsRef = db.ref(`contacts/${currentUser.uid}`);
+            contactsRef.on('child_added', snapshot => {
+                const friendUid = snapshot.key;
+                db.ref(`users/${friendUid}`).once('value', userSnapshot => {
+                    if (userSnapshot.exists()) {
+                        const friendData = userSnapshot.val();
+                        renderContact(friendUid, friendData);
+                    }
+                });
+            });
+            contactsRef.on('child_removed', snapshot => {
+                 const friendUid = snapshot.key;
+                 const contactElement = document.getElementById(`contact-${friendUid}`);
+                 if (contactElement) contactElement.remove();
+            });
         }
-        // Clear UI
-        document.getElementById('home-list').innerHTML = '';
-        document.getElementById('notifications-list').innerHTML = '';
-        document.getElementById('calls-list').innerHTML = '';
-    }
 
-    // --- NAVIGATION ---
-    const navButtons = document.querySelectorAll('.bottom-nav button');
-    const contentLists = document.querySelectorAll('.content-list');
-    navButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+        function renderContact(uid, data) {
+            const homeList = document.getElementById('home-list');
+            const listItem = document.createElement('li');
+            listItem.className = 'list-item';
+            listItem.id = `contact-${uid}`;
+            listItem.innerHTML = `
+                <span class="list-item-emoji">${data.emoji}</span>
+                <span class="list-item-name">${data.name}</span>
+                <div class="list-item-unread-badge" style="display: none;">0</div>
+            `;
+            listItem.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    openChat(uid, data);
+                }
+            });
             
-            contentLists.forEach(list => list.style.display = 'none');
-            const listId = button.id.replace('nav-', '') + '-list';
-            document.getElementById(listId).style.display = 'block';
+            const longPressTimer = 500;
+            let pressTimer;
+
+            listItem.addEventListener('mousedown', () => {
+                pressTimer = window.setTimeout(() => openContactMenu(uid, data), longPressTimer);
+            });
+            listItem.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            listItem.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+            listItem.addEventListener('touchstart', () => {
+                pressTimer = window.setTimeout(() => openContactMenu(uid, data), longPressTimer);
+            });
+            listItem.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+
+            homeList.appendChild(listItem);
+            
+            const chatId = getChatId(currentUser.uid, uid);
+            const unreadRef = db.ref(`unreadCounts/${currentUser.uid}/${chatId}`);
+            unreadRef.on('value', unreadSnapshot => {
+                const count = unreadSnapshot.val() || 0;
+                const badge = listItem.querySelector('.list-item-unread-badge');
+                if (badge) {
+                   badge.textContent = count;
+                   badge.style.display = count > 0 ? 'flex' : 'none';
+                }
+            });
+            contactListeners[uid] = unreadRef;
+        }
+        
+        function openContactMenu(uid, data) {
+            const modal = document.getElementById('contact-menu-modal');
+            document.getElementById('contact-menu-name').textContent = data.name;
+            
+            document.getElementById('contact-menu-delete').onclick = () => { deleteChat(uid); modal.classList.remove('active'); };
+            document.getElementById('contact-menu-block').onclick = () => { blockUser(uid, data.name); modal.classList.remove('active'); };
+
+            modal.classList.add('active');
+        }
+
+        function getChatId(uid1, uid2) {
+            return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+        }
+
+        function openChat(uid, data) {
+            currentChatId = getChatId(currentUser.uid, uid);
+            currentContact = { uid, ...data };
+            
+            document.getElementById('chat-contact-name').textContent = data.name;
+            document.getElementById('messages-container').innerHTML = '';
+            
+            // Listen for messages
+            db.ref(`messages/${currentChatId}`).orderByChild('timestamp').limitToLast(100).on('child_added', renderMessage);
+            
+            // Clear unread count
+            db.ref(`unreadCounts/${currentUser.uid}/${currentChatId}`).set(0);
+            
+            chatView.classList.add('active');
+        }
+
+        function renderMessage(snapshot) {
+            const msg = snapshot.val();
+            const container = document.getElementById('messages-container');
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.classList.add(msg.senderId === currentUser.uid ? 'sent' : 'received');
+            bubble.textContent = msg.text;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+
+            if (msg.senderId !== currentUser.uid && chatView.classList.contains('active')) {
+                 document.getElementById('message-tone-audio').play();
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !currentChatId || !currentContact) return;
+
+            const message = {
+                text,
+                senderId: currentUser.uid,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            db.ref(`messages/${currentChatId}`).push(message);
+            
+            // Increment unread count for recipient
+            const unreadRef = db.ref(`unreadCounts/${currentContact.uid}/${currentChatId}`);
+            unreadRef.transaction(count => (count || 0) + 1);
+            
+            input.value = '';
+        }
+        
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+        document.getElementById('message-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage()});
+        
+        document.getElementById('chat-back-button').addEventListener('click', () => {
+            chatView.classList.remove('active');
+            if (currentChatId) {
+                db.ref(`messages/${currentChatId}`).off('child_added');
+            }
+            currentChatId = null;
+            currentContact = null;
         });
-    });
 
-    // --- FRIEND SYSTEM ---
-    document.getElementById('add-friend-button').addEventListener('click', () => {
-        document.getElementById('add-friend-modal').classList.add('active');
-        document.getElementById('friend-search-result').innerHTML = '';
-        document.getElementById('friend-id-input').value = '';
-    });
+        // --- WebRTC CALLING ---
+        document.getElementById('voice-call-button').addEventListener('click', () => initiateCall(false));
+        document.getElementById('video-call-button').addEventListener('click', () => initiateCall(true));
+        document.getElementById('end-call-button').addEventListener('click', endCall);
+        document.getElementById('end-audio-call-button').addEventListener('click', endCall);
+        
+        async function initiateCall(isVideo) {
+            const friendStatus = (await db.ref(`users/${currentContact.uid}/callStatus`).once('value')).val();
+            if (friendStatus === 'busy') {
+                alert(`${currentContact.name} is currently on another call.`);
+                return;
+            }
 
-    document.getElementById('search-friend-button').addEventListener('click', () => {
-        const friendId = document.getElementById('friend-id-input').value.trim();
-        const resultEl = document.getElementById('friend-search-result');
-        if (!friendId) return;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
+                if (isVideo) {
+                    document.getElementById('local-video').srcObject = localStream;
+                }
+                db.ref(`users/${currentUser.uid}`).update({ callStatus: 'busy' });
+                
+                const callId = db.ref('calls').push().key;
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(event.candidate.toJSON());
+                    }
+                };
+                
+                peerConnection.ontrack = event => {
+                    remoteStream = event.streams[0];
+                    if (isVideo) {
+                        document.getElementById('remote-video').srcObject = remoteStream;
+                    } else {
+                        const remoteAudio = new Audio();
+                        remoteAudio.srcObject = remoteStream;
+                        remoteAudio.play();
+                    }
+                };
 
-        db.ref('users').orderByChild('userId').equalTo(friendId).once('value', snapshot => {
-            if (snapshot.exists()) {
-                const friendData = Object.entries(snapshot.val())[0];
-                const [friendUid, friendProfile] = friendData;
-                if (friendUid === currentUser.uid) {
-                    resultEl.innerHTML = `<p>You can't add yourself!</p>`;
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                currentCallData = {
+                    callId,
+                    callerId: currentUser.uid,
+                    callerInfo: { name: currentUser.name, emoji: currentUser.emoji },
+                    receiverId: currentContact.uid,
+                    offer,
+                    status: 'ringing',
+                    isVideo
+                };
+
+                await db.ref(`calls/${callId}`).set(currentCallData);
+                
+                listenForCallUpdates(callId, isVideo, currentContact);
+                
+            } catch (error) {
+                console.error("Error initiating call:", error);
+                alert("Could not start call. Check camera/microphone permissions.");
+                cleanupCall();
+            }
+        }
+        
+        function listenForCalls() {
+            const callsRef = db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid);
+            callsRef.on('child_added', snapshot => {
+                const callData = snapshot.val();
+                if (callData && callData.status === 'ringing') {
+                    currentCallData = { callId: snapshot.key, ...callData };
+                    showIncomingCallModal(currentCallData);
+                }
+            });
+        }
+        
+        function showIncomingCallModal(callData) {
+            document.getElementById('incoming-call-name').textContent = `${callData.callerInfo.name} is calling...`;
+            document.getElementById('incoming-call-emoji').textContent = callData.callerInfo.emoji;
+            document.getElementById('incoming-call-type').textContent = callData.isVideo ? 'Video Call' : 'Voice Call';
+            document.getElementById('incoming-call-modal').classList.add('active');
+            document.getElementById('incoming-call-audio').play();
+            
+            document.getElementById('accept-call-button').onclick = () => answerCall(true);
+            document.getElementById('reject-call-button').onclick = () => answerCall(false);
+        }
+        
+        async function answerCall(accepted) {
+            document.getElementById('incoming-call-modal').classList.remove('active');
+            document.getElementById('incoming-call-audio').pause();
+            document.getElementById('incoming-call-audio').currentTime = 0;
+
+            if (!accepted) {
+                await db.ref(`calls/${currentCallData.callId}`).update({ status: 'rejected' });
+                cleanupCall();
+                return;
+            }
+
+            try {
+                await db.ref(`users/${currentUser.uid}`).update({ callStatus: 'busy' });
+                
+                localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
+                if (currentCallData.isVideo) {
+                    document.getElementById('local-video').srcObject = localStream;
+                }
+                
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        db.ref(`iceCandidates/${currentCallData.callId}/${currentUser.uid}`).push(event.candidate.toJSON());
+                    }
+                };
+                
+                peerConnection.ontrack = event => {
+                    remoteStream = event.streams[0];
+                     if (currentCallData.isVideo) {
+                        document.getElementById('remote-video').srcObject = remoteStream;
+                    } else {
+                        const remoteAudio = new Audio();
+                        remoteAudio.srcObject = remoteStream;
+                        remoteAudio.play();
+                    }
+                };
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                await db.ref(`calls/${currentCallData.callId}`).update({ answer, status: 'answered' });
+                
+                listenForCallUpdates(currentCallData.callId, currentCallData.isVideo, {uid: currentCallData.callerId, ...currentCallData.callerInfo});
+
+            } catch (error) {
+                console.error("Error answering call:", error);
+                alert("Could not answer call. Check permissions.");
+                cleanupCall();
+            }
+        }
+        
+        function listenForCallUpdates(callId, isVideo, peer) {
+            if(isVideo) {
+                document.getElementById('call-view').classList.add('active');
+            } else {
+                document.getElementById('audio-callee-emoji').textContent = peer.emoji;
+                document.getElementById('audio-callee-name').textContent = peer.name;
+                document.getElementById('audio-call-status').textContent = 'Calling...';
+                document.getElementById('audio-call-view').classList.add('active');
+            }
+            
+            const callRef = db.ref(`calls/${callId}`);
+            callRef.on('value', async snapshot => {
+                const data = snapshot.val();
+                if (!data) { 
+                    cleanupCall('ended');
                     return;
                 }
-                resultEl.innerHTML = `
-                    <p>${friendProfile.emoji} ${friendProfile.name}</p>
-                    <button class="action-button" onclick="sendFriendRequest('${friendUid}', '${friendProfile.name}', '${friendProfile.emoji}')">Send Request</button>
-                `;
+
+                if (data.answer && peerConnection && peerConnection.signalingState !== 'stable') {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                }
+                
+                if (data.status === 'answered') {
+                    if(!isVideo) document.getElementById('audio-call-status').textContent = 'Connected';
+                    const peerId = data.callerId === currentUser.uid ? data.receiverId : data.callerId;
+                    db.ref(`iceCandidates/${callId}/${peerId}`).on('child_added', candSnapshot => {
+                        if (peerConnection) {
+                           peerConnection.addIceCandidate(new RTCIceCandidate(candSnapshot.val()));
+                        }
+                    });
+                }
+                
+                if (data.status === 'rejected' || data.status === 'ended') {
+                    cleanupCall(data.status);
+                    callRef.off();
+                }
+            });
+        }
+
+        function endCall() {
+            if(currentCallData) {
+                db.ref(`calls/${currentCallData.callId}`).update({ status: 'ended' });
             } else {
-                resultEl.innerHTML = `<p>User not found.</p>`;
+                 cleanupCall('ended');
             }
-        });
-    });
-
-    function sendFriendRequest(targetUid, name, emoji) {
-        const requestRef = db.ref(`requests/${targetUid}/${currentUser.uid}`);
-        requestRef.set({
-            from: currentUser.uid,
-            name: currentUser.name,
-            emoji: currentUser.emoji,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        const notificationRef = db.ref(`notifications/${targetUid}`).push();
-        notificationRef.set({
-            type: 'friend_request',
-            from: currentUser.uid,
-            name: currentUser.name,
-            read: false
-        });
-        alert('Friend request sent!');
-        document.getElementById('add-friend-modal').classList.remove('active');
-    }
-    
-    function acceptFriendRequest(requesterUid) {
-        // Add to each other's contacts
-        db.ref(`contacts/${currentUser.uid}/${requesterUid}`).set(true);
-        db.ref(`contacts/${requesterUid}/${currentUser.uid}`).set(true);
+        }
         
-        // Remove request and notification
-        db.ref(`requests/${currentUser.uid}/${requesterUid}`).remove();
-        db.ref('notifications').child(currentUser.uid).orderByChild('from').equalTo(requesterUid).once('value', snapshot => {
-            snapshot.forEach(child => {
-                if(child.val().type === 'friend_request') child.ref.remove();
-            });
-        });
-    }
+        function cleanupCall(status = 'ended') {
+            const callEndedTime = Date.now();
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
 
-    function rejectFriendRequest(requesterUid) {
-        db.ref(`requests/${currentUser.uid}/${requesterUid}`).remove();
-        db.ref('notifications').child(currentUser.uid).orderByChild('from').equalTo(requesterUid).once('value', snapshot => {
-            snapshot.forEach(child => {
-                if(child.val().type === 'friend_request') child.ref.remove();
-            });
-        });
-    }
+            document.getElementById('call-view').classList.remove('active');
+            document.getElementById('audio-call-view').classList.remove('active');
+            document.getElementById('local-video').srcObject = null;
+            document.getElementById('remote-video').srcObject = null;
+            
+            if (currentUser) {
+                db.ref(`users/${currentUser.uid}`).update({ callStatus: 'available' });
+            }
 
-    // --- MESSAGING ---
-    function loadContacts() {
-        const contactsRef = db.ref(`contacts/${currentUser.uid}`);
-        contactsRef.on('child_added', snapshot => {
-            const friendUid = snapshot.key;
-            db.ref(`users/${friendUid}`).once('value', userSnapshot => {
-                if (userSnapshot.exists()) {
-                    const friendData = userSnapshot.val();
-                    renderContact(friendUid, friendData);
+            if (currentCallData) {
+                logCallHistory(currentCallData, status, callEndedTime);
+                const callRef = db.ref(`calls/${currentCallData.callId}`);
+                callRef.off(); 
+                if (currentCallData.callerId === currentUser.uid) {
+                    setTimeout(() => {
+                         callRef.remove();
+                         db.ref(`iceCandidates/${currentCallData.callId}`).remove();
+                    }, 5000);
                 }
-            });
-        });
-        contactsRef.on('child_removed', snapshot => {
-             const friendUid = snapshot.key;
-             const contactElement = document.getElementById(`contact-${friendUid}`);
-             if (contactElement) contactElement.remove();
-        });
-    }
-
-    function renderContact(uid, data) {
-        const homeList = document.getElementById('home-list');
-        const listItem = document.createElement('li');
-        listItem.className = 'list-item';
-        listItem.id = `contact-${uid}`;
-        listItem.innerHTML = `
-            <span class="list-item-emoji">${data.emoji}</span>
-            <span class="list-item-name">${data.name}</span>
-            <div class="list-item-unread-badge" style="display: none;">0</div>
-        `;
-        listItem.addEventListener('click', (e) => {
-            if (e.target.tagName !== 'BUTTON') {
-                openChat(uid, data);
             }
-        });
-        
-        const longPressTimer = 500;
-        let pressTimer;
-
-        listItem.addEventListener('mousedown', () => {
-            pressTimer = window.setTimeout(() => openContactMenu(uid, data), longPressTimer);
-        });
-        listItem.addEventListener('mouseup', () => clearTimeout(pressTimer));
-        listItem.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-        listItem.addEventListener('touchstart', () => {
-            pressTimer = window.setTimeout(() => openContactMenu(uid, data), longPressTimer);
-        });
-        listItem.addEventListener('touchend', () => clearTimeout(pressTimer));
-
-
-        homeList.appendChild(listItem);
-        
-        const chatId = getChatId(currentUser.uid, uid);
-        const unreadRef = db.ref(`unreadCounts/${currentUser.uid}/${chatId}`);
-        unreadRef.on('value', unreadSnapshot => {
-            const count = unreadSnapshot.val() || 0;
-            const badge = listItem.querySelector('.list-item-unread-badge');
-            if (badge) {
-               badge.textContent = count;
-               badge.style.display = count > 0 ? 'flex' : 'none';
-            }
-        });
-        contactListeners[uid] = unreadRef;
-    }
-    
-    function openContactMenu(uid, data) {
-        const modal = document.getElementById('contact-menu-modal');
-        document.getElementById('contact-menu-name').textContent = data.name;
-        
-        document.getElementById('contact-menu-delete').onclick = () => { deleteChat(uid); modal.classList.remove('active'); };
-        document.getElementById('contact-menu-block').onclick = () => { blockUser(uid, data.name); modal.classList.remove('active'); };
-
-        modal.classList.add('active');
-    }
-
-    function getChatId(uid1, uid2) {
-        return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
-    }
-
-    function openChat(uid, data) {
-        currentChatId = getChatId(currentUser.uid, uid);
-        currentContact = { uid, ...data };
-        
-        document.getElementById('chat-contact-name').textContent = data.name;
-        document.getElementById('messages-container').innerHTML = '';
-        
-        // Listen for messages
-        db.ref(`messages/${currentChatId}`).orderByChild('timestamp').on('child_added', renderMessage);
-        
-        // Clear unread count
-        db.ref(`unreadCounts/${currentUser.uid}/${currentChatId}`).set(0);
-        
-        chatView.classList.add('active');
-    }
-
-    function renderMessage(snapshot) {
-        const msg = snapshot.val();
-        const container = document.getElementById('messages-container');
-        const bubble = document.createElement('div');
-        bubble.className = 'message-bubble';
-        bubble.classList.add(msg.senderId === currentUser.uid ? 'sent' : 'received');
-        bubble.textContent = msg.text;
-        container.appendChild(bubble);
-        container.scrollTop = container.scrollHeight;
-
-        if (msg.senderId !== currentUser.uid && chatView.classList.contains('active')) {
-             document.getElementById('message-tone-audio').play();
-        }
-    }
-    
-    function sendMessage() {
-        const input = document.getElementById('message-input');
-        const text = input.value.trim();
-        if (!text || !currentChatId || !currentContact) return;
-
-        const message = {
-            text,
-            senderId: currentUser.uid,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        };
-        db.ref(`messages/${currentChatId}`).push(message);
-        
-        // Increment unread count for recipient
-        const unreadRef = db.ref(`unreadCounts/${currentContact.uid}/${currentChatId}`);
-        unreadRef.transaction(count => (count || 0) + 1);
-        
-        input.value = '';
-    }
-    
-    document.getElementById('send-button').addEventListener('click', sendMessage);
-    document.getElementById('message-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage()});
-    
-    document.getElementById('chat-back-button').addEventListener('click', () => {
-        chatView.classList.remove('active');
-        if (currentChatId) {
-            db.ref(`messages/${currentChatId}`).off('child_added');
-        }
-        currentChatId = null;
-        currentContact = null;
-    });
-
-    // --- WebRTC CALLING ---
-    document.getElementById('voice-call-button').addEventListener('click', () => initiateCall(false));
-    document.getElementById('video-call-button').addEventListener('click', () => initiateCall(true));
-    document.getElementById('end-call-button').addEventListener('click', endCall);
-    document.getElementById('end-audio-call-button').addEventListener('click', endCall);
-    
-    async function initiateCall(isVideo) {
-        // Check if recipient is busy
-        const friendStatus = (await db.ref(`users/${currentContact.uid}/callStatus`).once('value')).val();
-        if (friendStatus === 'busy') {
-            alert(`${currentContact.name} is currently on another call.`);
-            return;
+            
+            currentCallData = null;
         }
 
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            if (isVideo) {
-                document.getElementById('local-video').srcObject = localStream;
-            }
-            db.ref(`users/${currentUser.uid}`).update({ callStatus: 'busy' });
-            
-            const callId = db.ref('calls').push().key;
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(event.candidate.toJSON());
-                }
+        function logCallHistory(callData, status, timestamp) {
+            const isCaller = callData.callerId === currentUser.uid;
+            const peerId = isCaller ? callData.receiverId : callData.callerId;
+            const peerName = isCaller ? (currentContact ? currentContact.name : 'Unknown') : callData.callerInfo.name;
+
+            const log = {
+                callType: callData.isVideo ? 'video' : 'voice',
+                timestamp,
+                direction: isCaller ? 'outgoing' : 'incoming',
+                peerId,
+                peerName,
+                status: status === 'answered' ? 'completed' : (status === 'ended' ? 'missed' : status),
             };
-            
-            peerConnection.ontrack = event => {
-                remoteStream = event.streams[0];
-                if (isVideo) {
-                    document.getElementById('remote-video').srcObject = remoteStream;
-                } else {
-                    const remoteAudio = new Audio();
-                    remoteAudio.srcObject = remoteStream;
-                    remoteAudio.play();
-                }
-            };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            
-            currentCallData = {
-                callId,
-                callerId: currentUser.uid,
-                callerInfo: { name: currentUser.name, emoji: currentUser.emoji },
-                receiverId: currentContact.uid,
-                offer,
-                status: 'ringing',
-                isVideo
-            };
-
-            await db.ref(`calls/${callId}`).set(currentCallData);
-            
-            listenForCallUpdates(callId, isVideo, currentContact);
-            
-        } catch (error) {
-            console.error("Error initiating call:", error);
-            alert("Could not start call. Check camera/microphone permissions.");
-            cleanupCall();
-        }
-    }
-    
-    function listenForCalls() {
-        const callsRef = db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid);
-        callsRef.on('child_added', snapshot => {
-            const callData = snapshot.val();
-            if (callData && callData.status === 'ringing') {
-                currentCallData = { callId: snapshot.key, ...callData };
-                showIncomingCallModal(currentCallData);
-            }
-        });
-    }
-    
-    function showIncomingCallModal(callData) {
-        document.getElementById('incoming-call-name').textContent = `${callData.callerInfo.name} is calling...`;
-        document.getElementById('incoming-call-emoji').textContent = callData.callerInfo.emoji;
-        document.getElementById('incoming-call-type').textContent = callData.isVideo ? 'Video Call' : 'Voice Call';
-        document.getElementById('incoming-call-modal').classList.add('active');
-        document.getElementById('incoming-call-audio').play();
-        
-        document.getElementById('accept-call-button').onclick = () => answerCall(true);
-        document.getElementById('reject-call-button').onclick = () => answerCall(false);
-    }
-    
-    async function answerCall(accepted) {
-        document.getElementById('incoming-call-modal').classList.remove('active');
-        document.getElementById('incoming-call-audio').pause();
-        document.getElementById('incoming-call-audio').currentTime = 0;
-
-        if (!accepted) {
-            await db.ref(`calls/${currentCallData.callId}`).update({ status: 'rejected' });
-            cleanupCall();
-            return;
-        }
-
-        try {
-            await db.ref(`users/${currentUser.uid}`).update({ callStatus: 'busy' });
-            
-            localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
-            if (currentCallData.isVideo) {
-                document.getElementById('local-video').srcObject = localStream;
-            }
-            
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    db.ref(`iceCandidates/${currentCallData.callId}/${currentUser.uid}`).push(event.candidate.toJSON());
-                }
-            };
-            
-            peerConnection.ontrack = event => {
-                remoteStream = event.streams[0];
-                 if (currentCallData.isVideo) {
-                    document.getElementById('remote-video').srcObject = remoteStream;
-                } else {
-                    const remoteAudio = new Audio();
-                    remoteAudio.srcObject = remoteStream;
-                    remoteAudio.play();
-                }
-            };
-            
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            
-            await db.ref(`calls/${currentCallData.callId}`).update({ answer, status: 'answered' });
-            
-            listenForCallUpdates(currentCallData.callId, currentCallData.isVideo, {uid: currentCallData.callerId, ...currentCallData.callerInfo});
-
-        } catch (error) {
-            console.error("Error answering call:", error);
-            alert("Could not answer call. Check permissions.");
-            cleanupCall();
-        }
-    }
-    
-    function listenForCallUpdates(callId, isVideo, peer) {
-        // Show the correct call UI
-        if(isVideo) {
-            document.getElementById('call-view').classList.add('active');
-        } else {
-            document.getElementById('audio-callee-emoji').textContent = peer.emoji;
-            document.getElementById('audio-callee-name').textContent = peer.name;
-            document.getElementById('audio-call-status').textContent = 'Calling...';
-            document.getElementById('audio-call-view').classList.add('active');
+            db.ref(`callHistory/${currentUser.uid}`).push(log);
         }
         
-        const callRef = db.ref(`calls/${callId}`);
-        callRef.on('value', async snapshot => {
-            const data = snapshot.val();
-            if (!data) { // Call entry deleted
-                cleanupCall('ended');
-                return;
-            }
-
-            // Caller gets the answer
-            if (data.answer && peerConnection && peerConnection.signalingState !== 'stable') {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
-            
-            if (data.status === 'answered') {
-                if(!isVideo) document.getElementById('audio-call-status').textContent = 'Connected';
-                // Listen for peer's ICE candidates
-                const peerId = data.callerId === currentUser.uid ? data.receiverId : data.callerId;
-                db.ref(`iceCandidates/${callId}/${peerId}`).on('child_added', candSnapshot => {
-                    if (peerConnection) {
-                       peerConnection.addIceCandidate(new RTCIceCandidate(candSnapshot.val()));
+        function listenForNotifications() {
+            const notificationsRef = db.ref(`notifications/${currentUser.uid}`);
+            notificationListener = notificationsRef.on('value', snapshot => {
+                const notificationsList = document.getElementById('notifications-list');
+                const badge = document.getElementById('notifications-badge');
+                notificationsList.innerHTML = '';
+                let unreadCount = 0;
+                
+                snapshot.forEach(childSnapshot => {
+                    const notif = childSnapshot.val();
+                    if (!notif.read) unreadCount++;
+                    
+                    if (notif.type === 'friend_request') {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-item';
+                        listItem.innerHTML = `
+                            <span class="list-item-emoji">🤝</span>
+                            <div class="list-item-name">${notif.name} sent you a friend request.</div>
+                            <div class="list-item-actions">
+                                <button class="action-button" onclick="acceptFriendRequest('${notif.from}')">Accept</button>
+                                <button class="action-button" style="background-color: #555" onclick="rejectFriendRequest('${notif.from}')">Reject</button>
+                            </div>
+                        `;
+                        notificationsList.prepend(listItem);
                     }
                 });
-            }
-            
-            if (data.status === 'rejected' || data.status === 'ended') {
-                cleanupCall(data.status);
-                callRef.off();
-            }
-        });
-    }
-
-    function endCall() {
-        if(currentCallData) {
-            db.ref(`calls/${currentCallData.callId}`).update({ status: 'ended' });
-        } else {
-             cleanupCall('ended');
-        }
-    }
-    
-    function cleanupCall(status = 'ended') {
-        const callEndedTime = Date.now();
-        
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
-            localStream = null;
-        }
-        if (peerConnection) {
-            peerConnection.close();
-            peerConnection = null;
-        }
-
-        document.getElementById('call-view').classList.remove('active');
-        document.getElementById('audio-call-view').classList.remove('active');
-        document.getElementById('local-video').srcObject = null;
-        document.getElementById('remote-video').srcObject = null;
-        
-        if (currentUser) {
-            db.ref(`users/${currentUser.uid}`).update({ callStatus: 'available' });
-        }
-
-        if (currentCallData) {
-            logCallHistory(currentCallData, status, callEndedTime);
-            // Clean up database entries
-            const callRef = db.ref(`calls/${currentCallData.callId}`);
-            callRef.off(); // Detach listeners
-            // Only caller removes the main record to avoid race conditions
-            if (currentCallData.callerId === currentUser.uid) {
-                setTimeout(() => { // Give receiver time to see status change
-                     callRef.remove();
-                     db.ref(`iceCandidates/${currentCallData.callId}`).remove();
-                }, 5000);
-            }
-        }
-        
-        currentCallData = null;
-    }
-
-    function logCallHistory(callData, status, timestamp) {
-        const isCaller = callData.callerId === currentUser.uid;
-        const peerId = isCaller ? callData.receiverId : callData.callerId;
-        const peerName = isCaller ? (currentContact ? currentContact.name : 'Unknown') : callData.callerInfo.name;
-
-        const log = {
-            callType: callData.isVideo ? 'video' : 'voice',
-            timestamp,
-            direction: isCaller ? 'outgoing' : 'incoming',
-            peerId,
-            peerName,
-            status: status === 'answered' ? 'completed' : status, // 'rejected', 'ended', etc.
-        };
-        db.ref(`callHistory/${currentUser.uid}`).push(log);
-    }
-    
-    // --- NOTIFICATIONS & CALL HISTORY ---
-    function listenForNotifications() {
-        const notificationsRef = db.ref(`notifications/${currentUser.uid}`);
-        notificationListener = notificationsRef.on('value', snapshot => {
-            const notificationsList = document.getElementById('notifications-list');
-            const badge = document.getElementById('notifications-badge');
-            notificationsList.innerHTML = '';
-            let unreadCount = 0;
-            
-            snapshot.forEach(childSnapshot => {
-                const notif = childSnapshot.val();
-                if (!notif.read) unreadCount++;
                 
-                if (notif.type === 'friend_request') {
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            });
+        }
+        
+        function listenForCallHistory() {
+            const callsList = document.getElementById('calls-list');
+            db.ref(`callHistory/${currentUser.uid}`).orderByChild('timestamp').limitToLast(50).on('value', snapshot => {
+                callsList.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const log = childSnapshot.val();
                     const listItem = document.createElement('li');
                     listItem.className = 'list-item';
+                    const date = new Date(log.timestamp).toLocaleString();
                     listItem.innerHTML = `
-                        <span class="list-item-emoji">🤝</span>
-                        <div class="list-item-name">${notif.name} sent you a friend request.</div>
-                        <div class="list-item-actions">
-                            <button class="action-button" onclick="acceptFriendRequest('${notif.from}')">Accept</button>
-                            <button class="action-button" style="background-color: #555" onclick="rejectFriendRequest('${notif.from}')">Reject</button>
-                        </div>
+                        <span class="list-item-emoji">${log.callType === 'video' ? '📹' : '📞'}</span>
+                        <span class="list-item-name">${log.direction === 'outgoing' ? 'To' : 'From'}: ${log.peerName} (${log.status})</span>
+                        <span style="font-size: 0.8rem;">${date}</span>
                     `;
-                    notificationsList.prepend(listItem);
-                }
-            });
-            
-            badge.textContent = unreadCount;
-            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-        });
-    }
-    
-    function listenForCallHistory() {
-        const callsList = document.getElementById('calls-list');
-        db.ref(`callHistory/${currentUser.uid}`).orderByChild('timestamp').limitToLast(50).on('value', snapshot => {
-            callsList.innerHTML = '';
-            snapshot.forEach(childSnapshot => {
-                const log = childSnapshot.val();
-                const listItem = document.createElement('li');
-                listItem.className = 'list-item';
-                const date = new Date(log.timestamp).toLocaleString();
-                listItem.innerHTML = `
-                    <span class="list-item-emoji">${log.callType === 'video' ? '📹' : '📞'}</span>
-                    <span class="list-item-name">${log.direction === 'outgoing' ? 'To' : 'From'}: ${log.peerName} (${log.status})</span>
-                    <span style="font-size: 0.8rem;">${date}</span>
-                `;
-                callsList.prepend(listItem);
-            });
-        });
-    }
-
-    // --- OTHER FEATURES ---
-    // Theme Toggle
-    document.getElementById('theme-toggle-button').addEventListener('click', () => {
-        body.classList.toggle('light-mode');
-        localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light' : 'dark');
-    });
-
-    // Menu Modal
-    document.getElementById('menu-button').addEventListener('click', () => {
-        document.getElementById('menu-modal').classList.add('active');
-    });
-
-    // Profile Modal
-    document.getElementById('profile-modal-button').addEventListener('click', () => {
-        document.getElementById('profile-user-id').textContent = currentUser.userId;
-        document.getElementById('profile-name-input').value = currentUser.name;
-        document.getElementById('profile-emoji-input').value = currentUser.emoji;
-        document.getElementById('profile-modal').classList.add('active');
-    });
-    
-    document.getElementById('save-profile-button').addEventListener('click', () => {
-        const newName = document.getElementById('profile-name-input').value;
-        const newEmoji = document.getElementById('profile-emoji-input').value;
-        if(newName && newEmoji) {
-            db.ref(`users/${currentUser.uid}`).update({ name: newName, emoji: newEmoji });
-            currentUser.name = newName;
-            currentUser.emoji = newEmoji;
-            document.getElementById('profile-modal').classList.remove('active');
-        }
-    });
-    
-    // Block System
-    function blockUser(uid, name) {
-        if (confirm(`Are you sure you want to block ${name}? You will be removed from each other's contact lists and cannot communicate.`)) {
-            // Remove from each other's contacts
-            db.ref(`contacts/${currentUser.uid}/${uid}`).remove();
-            db.ref(`contacts/${uid}/${currentUser.uid}`).remove();
-            // Add to block list
-            db.ref(`blocked/${currentUser.uid}/${uid}`).set(true);
-            alert(`${name} has been blocked.`);
-        }
-    }
-    
-    function unblockUser(uid) {
-        db.ref(`blocked/${currentUser.uid}/${uid}`).remove();
-        alert('User unblocked.');
-        loadBlockedUsers();
-    }
-    
-    function loadBlockedUsers() {
-        const listEl = document.getElementById('blocked-users-list');
-        listEl.innerHTML = 'Loading...';
-        db.ref(`blocked/${currentUser.uid}`).once('value', snapshot => {
-            if(!snapshot.exists()) {
-                listEl.innerHTML = '<p>No blocked users.</p>';
-                return;
-            }
-            listEl.innerHTML = '';
-            snapshot.forEach(childSnapshot => {
-                const blockedUid = childSnapshot.key;
-                db.ref(`users/${blockedUid}`).once('value', userSnap => {
-                    if (userSnap.exists()) {
-                        const blockedUser = userSnap.val();
-                        const item = document.createElement('div');
-                        item.className = 'list-item';
-                        item.innerHTML = `<span>${blockedUser.emoji} ${blockedUser.name}</span> <button class="action-button" onclick="unblockUser('${blockedUid}')">Unblock</button>`;
-                        listEl.appendChild(item);
-                    }
+                    callsList.prepend(listItem);
                 });
             });
-        });
-    }
-    
-    document.getElementById('blocked-users-modal-button').addEventListener('click', () => {
-        loadBlockedUsers();
-        document.getElementById('blocked-users-modal').classList.add('active');
-    });
-
-    function deleteChat(uid) {
-        const chatId = getChatId(currentUser.uid, uid);
-        if (confirm('Are you sure you want to delete this entire chat history? This cannot be undone.')) {
-            db.ref(`messages/${chatId}`).remove();
-            db.ref(`unreadCounts/${currentUser.uid}/${chatId}`).remove();
-            db.ref(`unreadCounts/${uid}/${chatId}`).remove();
         }
-    }
-    
-    // Speaker toggle
-    const speakerButton = document.getElementById('speaker-button');
-    speakerButton.addEventListener('click', () => {
-        // NOTE: Actual speakerphone control is complex and not fully reliable via JS.
-        // This is a UI toggle representation.
-        speakerButton.classList.toggle('active');
-        alert('Speaker toggle is a UI demonstration.');
-    });
 
-    // Draggable local video
-    const localVideo = document.getElementById('local-video');
-    let isDragging = false;
-    let offsetX, offsetY;
+        // --- OTHER FEATURES ---
+        document.getElementById('theme-toggle-button').addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
 
-    localVideo.addEventListener('mousedown', e => {
-        isDragging = true;
-        offsetX = e.clientX - localVideo.offsetLeft;
-        offsetY = e.clientY - localVideo.offsetTop;
-        localVideo.style.transition = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-        if (!isDragging) return;
-        localVideo.style.left = `${e.clientX - offsetX}px`;
-        localVideo.style.top = `${e.clientY - offsetY}px`;
-    });
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-        localVideo.style.transition = '';
-    });
+        document.getElementById('menu-button').addEventListener('click', () => {
+            document.getElementById('menu-modal').classList.add('active');
+        });
 
+        document.getElementById('profile-modal-button').addEventListener('click', () => {
+            document.getElementById('profile-user-id').textContent = currentUser.userId;
+            document.getElementById('profile-name-input').value = currentUser.name;
+            document.getElementById('profile-emoji-input').value = currentUser.emoji;
+            document.getElementById('profile-modal').classList.add('active');
+        });
+        
+        document.getElementById('save-profile-button').addEventListener('click', () => {
+            const newName = document.getElementById('profile-name-input').value;
+            const newEmoji = document.getElementById('profile-emoji-input').value;
+            if(newName && newEmoji) {
+                db.ref(`users/${currentUser.uid}`).update({ name: newName, emoji: newEmoji });
+                currentUser.name = newName;
+                currentUser.emoji = newEmoji;
+                document.getElementById('profile-modal').classList.remove('active');
+            }
+        });
+        
+        function blockUser(uid, name) {
+            if (confirm(`Are you sure you want to block ${name}? You will be removed from each other's contact lists and cannot communicate.`)) {
+                db.ref(`contacts/${currentUser.uid}/${uid}`).remove();
+                db.ref(`contacts/${uid}/${currentUser.uid}`).remove();
+                db.ref(`blocked/${currentUser.uid}/${uid}`).set(true);
+                alert(`${name} has been blocked.`);
+            }
+        }
+        
+        window.unblockUser = function(uid) {
+            db.ref(`blocked/${currentUser.uid}/${uid}`).remove();
+            alert('User unblocked.');
+            loadBlockedUsers();
+        }
+        
+        function loadBlockedUsers() {
+            const listEl = document.getElementById('blocked-users-list');
+            listEl.innerHTML = 'Loading...';
+            db.ref(`blocked/${currentUser.uid}`).once('value', snapshot => {
+                if(!snapshot.exists()) {
+                    listEl.innerHTML = '<p>No blocked users.</p>';
+                    return;
+                }
+                listEl.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const blockedUid = childSnapshot.key;
+                    db.ref(`users/${blockedUid}`).once('value', userSnap => {
+                        if (userSnap.exists()) {
+                            const blockedUser = userSnap.val();
+                            const item = document.createElement('div');
+                            item.className = 'list-item';
+                            item.innerHTML = `<span>${blockedUser.emoji} ${blockedUser.name}</span> <button class="action-button" onclick="unblockUser('${blockedUid}')">Unblock</button>`;
+                            listEl.appendChild(item);
+                        }
+                    });
+                });
+            });
+        }
+        
+        document.getElementById('blocked-users-modal-button').addEventListener('click', () => {
+            loadBlockedUsers();
+            document.getElementById('blocked-users-modal').classList.add('active');
+        });
 
+        function deleteChat(uid) {
+            const chatId = getChatId(currentUser.uid, uid);
+            if (confirm('Are you sure you want to delete this entire chat history? This cannot be undone.')) {
+                db.ref(`messages/${chatId}`).remove();
+                db.ref(`unreadCounts/${currentUser.uid}/${chatId}`).remove();
+                db.ref(`unreadCounts/${uid}/${chatId}`).remove();
+            }
+        }
+        
+        const speakerButton = document.getElementById('speaker-button');
+        speakerButton.addEventListener('click', () => {
+            speakerButton.classList.toggle('active');
+            alert('Speaker toggle is a UI demonstration.');
+        });
+
+        const localVideo = document.getElementById('local-video');
+        let isDragging = false;
+        let offsetX, offsetY;
+        localVideo.addEventListener('mousedown', e => {
+            isDragging = true;
+            offsetX = e.clientX - localVideo.offsetLeft;
+            offsetY = e.clientY - localVideo.offsetTop;
+            localVideo.style.transition = 'none';
+        });
+        document.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            localVideo.style.left = `${e.clientX - offsetX}px`;
+            localVideo.style.top = `${e.clientY - offsetY}px`;
+        });
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            localVideo.style.transition = '';
+        });
+
+    }); // End of DOMContentLoaded
 </script>
 </body>
 </html>
