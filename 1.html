@@ -6,7 +6,6 @@
     <title>HaiCalling</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <style>
-        /* CSS from the previous example is largely the same */
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #f0f2f5;
@@ -25,34 +24,23 @@
         }
         .page.visible { visibility: visible; opacity: 1; }
 
-        /* Loading Spinner */
         #loading-page .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px; height: 36px; border-radius: 50%;
+            border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%;
             border-left-color: var(--primary-color);
             animation: spin 1s ease infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Auth Page Styling */
         #auth-page .container { width: 90%; max-width: 400px; text-align: center; }
         #auth-page h1 { color: var(--primary-color); }
-        #auth-page input {
-            width: calc(100% - 24px); padding: 12px; margin-bottom: 15px;
-            border: 1px solid #ccc; border-radius: 8px; font-size: 16px;
-        }
-        #auth-page button {
-            width: 100%; padding: 12px; border-radius: 8px; border: none;
-            background-color: var(--primary-color); color: white;
-            font-size: 18px; cursor: pointer;
-        }
+        #auth-page input { width: calc(100% - 24px); padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        #auth-page button { width: 100%; padding: 12px; border-radius: 8px; border: none; background-color: var(--primary-color); color: white; font-size: 18px; cursor: pointer; }
         #auth-page .links { margin-top: 20px; }
         #auth-page .links a { color: var(--primary-color); text-decoration: none; cursor: pointer; }
         .form-container { display: none; }
         .form-container.active { display: block; }
         .error-message { color: #d93025; margin-bottom: 15px; }
 
-        /* Other page styles (Profile, Welcome, Home) are the same */
         #profile-setup-page .container, #welcome-page { width: 90%; max-width: 400px; text-align: center; }
         #profile-setup-page h2 { color: var(--text-color); }
         #profile-setup-page input { width: calc(100% - 24px); padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
@@ -66,9 +54,36 @@
             opacity: 0; visibility: hidden; pointer-events: none;
         }
         #home-screen.visible { opacity: 1; visibility: visible; pointer-events: auto; }
-        .home-header { height: 60px; background-color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ddd; flex-shrink: 0; }
-        .app-name { font-size: 22px; font-weight: bold; color: var(--primary-color); }
-        .add-friend-btn { background: none; border: none; font-size: 24px; color: var(--primary-color); cursor: pointer; }
+
+        /* --- MODIFIED: Home Header CSS --- */
+        .home-header {
+            height: 60px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* This perfectly centers the middle item */
+            padding: 0 15px;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+        .app-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .menu-btn, .add-friend-btn { /* NEW: Combined style for both header buttons */
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--primary-color);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .home-content { flex-grow: 1; background-color: var(--secondary-color); display: flex; align-items: center; justify-content: center; text-align: center; color: var(--text-color); }
         .home-footer { height: 65px; background-color: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #ddd; flex-shrink: 0; }
         .footer-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; color: #999; font-size: 12px; cursor: pointer; }
@@ -78,66 +93,41 @@
 </head>
 <body>
 
-    <!-- Loading Screen -->
-    <div class="page visible" id="loading-page">
-        <div class="spinner"></div>
-    </div>
+    <!-- All other pages (Loading, Auth, Profile Setup, Welcome) remain unchanged -->
+    <div class="page visible" id="loading-page"><div class="spinner"></div></div>
+    <div class="page" id="auth-page"><div class="container"><h1>HaiCalling</h1><div id="login-container" class="form-container active"><form id="login-form"><p class="error-message" id="login-error"></p><input type="email" id="login-email" placeholder="Email" required><input type="password" id="login-password" placeholder="Password" required><button type="submit">Login</button></form><div class="links"><a id="show-register-link">Don't have an account? Register</a></div></div><div id="register-container" class="form-container"><form id="register-form"><p class="error-message" id="register-error"></p><input type="email" id="register-email" placeholder="Email" required><input type="password" id="register-password" placeholder="Password (min. 6 chars)" required><button type="submit">Register</button></form><div class="links"><a id="show-login-link">Already have an account? Login</a></div></div></div></div>
+    <div class="page" id="profile-setup-page"><div class="container"><h2>Set Up Your Profile</h2><form id="profile-form"><input type="text" id="profile-name" placeholder="Your Name" required><input type="text" id="profile-dob" placeholder="Date of Birth" onfocus="(this.type='date')" onblur="(this.type='text')" required><input type="url" id="profile-image" placeholder="Link to your Profile Image/Emoji" required><button type="submit">Save and Continue</button></form></div></div>
+    <div class="page" id="welcome-page"><h1 id="welcome-user-name">Welcome!</h1></div>
 
-    <!-- Auth Page -->
-    <div class="page" id="auth-page">
-        <div class="container">
-            <h1>HaiCalling</h1>
-            <!-- Login Form -->
-            <div id="login-container" class="form-container active">
-                <form id="login-form">
-                    <p class="error-message" id="login-error"></p>
-                    <input type="email" id="login-email" placeholder="Email" required>
-                    <input type="password" id="login-password" placeholder="Password" required>
-                    <button type="submit">Login</button>
-                </form>
-                <div class="links">
-                    <a id="show-register-link">Don't have an account? Register</a>
-                </div>
-            </div>
-            <!-- Register Form -->
-            <div id="register-container" class="form-container">
-                <form id="register-form">
-                     <p class="error-message" id="register-error"></p>
-                    <input type="email" id="register-email" placeholder="Email" required>
-                    <input type="password" id="register-password" placeholder="Password (min. 6 chars)" required>
-                    <button type="submit">Register</button>
-                </form>
-                <div class="links">
-                    <a id="show-login-link">Already have an account? Login</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Setup Page -->
-    <div class="page" id="profile-setup-page">
-        <div class="container">
-            <h2>Set Up Your Profile</h2>
-            <form id="profile-form">
-                <input type="text" id="profile-name" placeholder="Your Name" required>
-                <input type="text" id="profile-dob" placeholder="Date of Birth" onfocus="(this.type='date')" onblur="(this.type='text')" required>
-                <input type="url" id="profile-image" placeholder="Link to your Profile Image/Emoji" required>
-                <button type="submit">Save and Continue</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Welcome Page -->
-    <div class="page" id="welcome-page">
-        <h1 id="welcome-user-name">Welcome!</h1>
-    </div>
-
-    <!-- Home Screen -->
+    <!-- =========== MODIFIED: HOME SCREEN HTML =========== -->
     <div id="home-screen">
-        <!-- Header, Content, Footer are the same -->
-        <header class="home-header"><span class="app-name">HaiCalling</span><button class="add-friend-btn"><i class="fas fa-user-plus"></i></button></header>
-        <main class="home-content"><div><h2>Home Content</h2></div></main>
-        <footer class="home-footer"><button class="footer-btn"><i class="fas fa-bell"></i><span>Notifications</span></button><button class="footer-btn active"><i class="fas fa-home"></i><span>Home</span></button><button class="footer-btn"><i class="fas fa-phone"></i><span>Calling</span></button></footer>
+        <header class="home-header">
+            <!-- NEW: Menu button added at the start -->
+            <button class="menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- App name is now the middle element -->
+            <span class="app-name">HaiCalling</span>
+
+            <!-- Add friend button is the last element -->
+            <button class="add-friend-btn">
+                <i class="fas fa-user-plus"></i>
+            </button>
+        </header>
+
+        <main class="home-content">
+            <div>
+                <h2>Home Content</h2>
+                <p>Friend list, chats, or call history would go here.</p>
+            </div>
+        </main>
+
+        <footer class="home-footer">
+            <button class="footer-btn"><i class="fas fa-bell"></i><span>Notifications</span></button>
+            <button class="footer-btn active"><i class="fas fa-home"></i><span>Home</span></button>
+            <button class="footer-btn"><i class="fas fa-phone"></i><span>Calling</span></button>
+        </footer>
     </div>
 
 
@@ -148,25 +138,24 @@
     <script>
         // --- YOUR SECURE FIREBASE CONFIG ---
         const firebaseConfig = {
-            apiKey: "YOUR_NEW_RESTRICTED_API_KEY",
-            authDomain: "haicalling.firebaseapp.com",
-            databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "haicalling",
-            storageBucket: "haicalling.appspot.com",
-            messagingSenderId: "379823659600",
-            appId: "1:379823659600:web:d86fb74951ce52206b4f55"
+          apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
+          authDomain: "haicalling.firebaseapp.com",
+          databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "haicalling",
+          storageBucket: "haicalling.firebasestorage.app",
+          messagingSenderId: "379823659600",
+          appId: "1:379823659600:web:d86fb74951ce52206b4f55"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- PAGE & ELEMENT SELECTORS ---
+        // --- All JavaScript logic remains the same ---
         const pages = document.querySelectorAll('.page');
         const homeScreen = document.getElementById('home-screen');
         const loginContainer = document.getElementById('login-container');
         const registerContainer = document.getElementById('register-container');
         
-        // --- UI HELPER FUNCTION ---
         function showPage(pageId) {
             pages.forEach(page => page.classList.remove('visible'));
             homeScreen.classList.remove('visible');
@@ -178,51 +167,36 @@
             }
         }
 
-        // --- AUTH STATE LISTENER (The Core Logic) ---
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // User is signed in. Check if they have a profile.
                 const userDocRef = db.collection('users').doc(user.uid);
                 const userDoc = await userDocRef.get();
-
                 if (userDoc.exists) {
-                    // PROFILE EXISTS: Returning user. Go to home.
                     showPage('home-screen');
                 } else {
-                    // NO PROFILE: New user. Force profile setup.
                     showPage('profile-setup-page');
                 }
             } else {
-                // User is signed out. Show the auth page.
                 showPage('auth-page');
             }
         });
 
-        // --- FORM SUBMISSION HANDLERS ---
-        // Login
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             auth.signInWithEmailAndPassword(email, password)
-                .catch(error => {
-                    document.getElementById('login-error').textContent = error.message;
-                });
+                .catch(error => { document.getElementById('login-error').textContent = error.message; });
         });
 
-        // Register
         document.getElementById('register-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
             auth.createUserWithEmailAndPassword(email, password)
-                .catch(error => {
-                    document.getElementById('register-error').textContent = error.message;
-                });
-            // onAuthStateChanged will handle the redirect to the profile setup page automatically.
+                .catch(error => { document.getElementById('register-error').textContent = error.message; });
         });
 
-        // Profile Setup
         document.getElementById('profile-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const user = auth.currentUser;
@@ -234,19 +208,12 @@
                     imageUrl: document.getElementById('profile-image').value,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                
-                // Show welcome message
                 document.getElementById('welcome-user-name').textContent = `Welcome, ${profileName}!`;
                 showPage('welcome-page');
-
-                // Redirect to home after a delay
-                setTimeout(() => {
-                    showPage('home-screen');
-                }, 2000);
+                setTimeout(() => { showPage('home-screen'); }, 2000);
             }
         });
         
-        // --- AUTH FORM TOGGLING ---
         document.getElementById('show-register-link').addEventListener('click', () => {
             loginContainer.classList.remove('active');
             registerContainer.classList.add('active');
