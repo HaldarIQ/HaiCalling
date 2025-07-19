@@ -440,7 +440,7 @@
 
         let currentUser = null, currentChatId = null, currentChatPeer = null;
         let messageListeners = {}, unreadListeners = {}, callListeners = {};
-        let peerConnection, localStream, currentCallData = null, isSpeakerOn = false;
+        let peerConnection, localStream, remoteStream, currentCallData = null, isSpeakerOn = false;
         let remoteCandidates = [];
         
         const homePage = document.getElementById('home-page');
@@ -675,7 +675,7 @@
             const friendStatusSnap = await db.ref(`users/${currentChatPeer.uid}/callStatus`).once('value');
             if(friendStatusSnap.val() === 'busy'){ showAlert('User Busy', `${currentChatPeer.name} is on another call.`); return; }
             
-            await cleanupCall(false); // Clean up any previous call remnants without logging
+            await cleanupCall(false); 
 
             const callId = db.ref('calls').push().key;
             currentCallData = { callId, callerId: currentUser.uid, callerInfo: { name: currentUser.name, emoji: currentUser.emoji }, receiverId: currentChatPeer.uid, status: 'ringing', isVideo };
@@ -698,7 +698,7 @@
             }
 
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
-            setupPeerConnection(callId, true);
+            setupPeerConnection(callId);
 
             try {
                 const offer = await peerConnection.createOffer();
@@ -759,7 +759,7 @@
                  });
             }
             
-            setupPeerConnection(currentCallData.callId, false);
+            setupPeerConnection(currentCallData.callId);
             
             try {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
@@ -767,7 +767,7 @@
                 await peerConnection.setLocalDescription(answer);
                 await db.ref(`calls/${currentCallData.callId}`).update({ status: 'answered', answer: { type: answer.type, sdp: answer.sdp } });
                 listenForCallUpdates(currentCallData.callId, false);
-                remoteCandidates.forEach(candidate => peerConnection.addIceCandidate(new RTCIceCandidate(candidate)));
+                remoteCandidates.forEach(candidate => peerConnection.addIceCandidate(candidate));
                 remoteCandidates = [];
             } catch(err) {
                 console.error("Error accepting call:", err);
@@ -785,28 +785,26 @@
              await cleanupCall(false);
         });
 
-        function setupPeerConnection(callId, isCaller) {
+        function setupPeerConnection(callId) {
             remoteCandidates = [];
             peerConnection = new RTCPeerConnection(servers);
+            
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
             
-            // FIXED: More robust ontrack handler to prevent asymmetric video issues.
+            // FIXED: This is the most robust way to handle the remote stream
+            remoteStream = new MediaStream();
+            document.getElementById('remote-video').srcObject = remoteStream;
+
             peerConnection.ontrack = (event) => {
-                const remoteVideo = document.getElementById('remote-video');
-                if (event.streams && event.streams[0]) {
-                    remoteVideo.srcObject = event.streams[0];
-                } else {
-                    if (!remoteVideo.srcObject) {
-                        remoteVideo.srcObject = new MediaStream();
-                    }
-                    remoteVideo.srcObject.addTrack(event.track);
-                }
+                event.streams[0].getTracks().forEach(track => {
+                    remoteStream.addTrack(track);
+                });
             };
             
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
             
             peerConnection.onconnectionstatechange = () => {
-                if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'closed' || peerConnection.connectionState === 'failed') {
+                if (peerConnection && (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'closed' || peerConnection.connectionState === 'failed')) {
                     endCall();
                 }
             };
@@ -833,7 +831,7 @@
                 if (isCaller && callData.answer && peerConnection && !peerConnection.currentRemoteDescription) {
                     try {
                         await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.answer));
-                        remoteCandidates.forEach(candidate => peerConnection.addIceCandidate(new RTCIceCandidate(candidate)));
+                        remoteCandidates.forEach(candidate => peerConnection.addIceCandidate(candidate));
                         remoteCandidates = [];
                     } catch (err) { console.error("Error setting remote description:", err); }
                 }
@@ -866,8 +864,16 @@
         async function cleanupCall(wasRemoved) {
             if (!currentCallData && !peerConnection && !localStream) return;
             
-            if (peerConnection) { peerConnection.close(); peerConnection = null; }
+            if (peerConnection) {
+                 peerConnection.ontrack = null;
+                 peerConnection.onicecandidate = null;
+                 peerConnection.onconnectionstatechange = null;
+                 peerConnection.close(); 
+                 peerConnection = null;
+            }
+
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            if (remoteStream) { remoteStream.getTracks().forEach(t => t.stop()); remoteStream = null; }
             
             if (currentCallData) {
                 const callId = currentCallData.callId;
