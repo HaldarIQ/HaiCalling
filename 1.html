@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="theme-color" content="#0d0d1e">
     
     <title>HaiCalling</title>
     <link rel="icon" type="image/x-icon" href="/icon.png">
@@ -20,27 +20,29 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
+        /* --- NEW COLOR SCHEME BASED ON YOUR IMAGE --- */
         :root {
-            --primary-bg: #1a1a2e;
-            --secondary-bg: #16213e;
-            --accent-color: #0f3460;
-            --text-color: #e94560;
-            --text-light: #f0f0f0;
-            --glow-color: rgba(233, 69, 96, 0.7);
-            --glass-bg: rgba(22, 33, 62, 0.6);
-            --red-badge: #e94560;
+            --primary-bg: #0d0d1e; /* Very dark blue, almost black */
+            --secondary-bg: #1a1a2e; /* Dark blue/purple for elements */
+            --accent-color: #7f00ff; /* Vibrant Purple */
+            --text-color: #08f7fe;   /* Neon Cyan/Teal */
+            --text-light: #f0f0f0;   /* Off-white */
+            --glow-color: rgba(8, 247, 254, 0.6); /* Glow effect for the neon teal */
+            --glass-bg: rgba(26, 26, 46, 0.5); /* Semi-transparent dark blue */
+            --red-badge: #e94560; /* Kept for high-visibility notifications */
         }
 
         body.light-mode {
-            --primary-bg: #f0f8ff;
-            --secondary-bg: #ffffff;
-            --accent-color: #87ceeb;
-            --text-color: #4682b4;
-            --text-light: #333;
-            --glow-color: rgba(70, 130, 180, 0.7);
-            --glass-bg: rgba(255, 255, 255, 0.6);
-            --red-badge: #ff3b30;
+            --primary-bg: #ffffff;
+            --secondary-bg: #f0f5f9;
+            --accent-color: #a368ff; /* Lighter Purple */
+            --text-color: #7f00ff;   /* Vibrant Purple as main text color */
+            --text-light: #0d0d1e;   /* Dark text for readability */
+            --glow-color: rgba(127, 0, 255, 0.5);
+            --glass-bg: rgba(240, 245, 249, 0.7);
+            --red-badge: #e94560;
         }
+        /* --- END OF NEW COLOR SCHEME --- */
 
         * {
             margin: 0;
@@ -61,7 +63,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #16213e, #0f3460, #e94560);
+            background: linear-gradient(155deg, #00d9a6 0%, #0d0d1e 50%, #7f00ff 100%);
             background-size: 400% 400%;
             animation: gradientAnimation 15s ease infinite;
             color: var(--text-light);
@@ -70,7 +72,7 @@
         }
 
         body.light-mode {
-             background: linear-gradient(135deg, #87ceeb, #add8e6, #4682b4);
+             background: linear-gradient(135deg, #c5fdfb, #e0c8ff);
              background-size: 400% 400%;
         }
 
@@ -132,7 +134,7 @@
         .input-field:focus { border-color: var(--text-color); box-shadow: 0 0 15px var(--glow-color); }
         .auth-button {
             padding: 15px; border-radius: 50px; border: none; background: var(--text-color);
-            color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
+            color: var(--primary-bg); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
         }
         .auth-button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-color); }
         .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; }
@@ -166,7 +168,7 @@
         .list-item-actions { display: flex; align-items: center; gap: 10px; }
         .action-btn { padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
         .accept-btn { background-color: #28a745; }
-        .decline-btn { background-color: #dc3545; }
+        .decline-btn { background-color: var(--red-badge); }
         .unread-badge {
             position: absolute; top: 10px; right: 10px; background-color: var(--red-badge);
             color: white; border-radius: 50%; width: 22px; height: 22px;
@@ -219,7 +221,7 @@
             margin-bottom: 10px; overflow-wrap: break-word; 
         }
         .message-bubble.sent {
-            background-color: var(--text-color); color: white;
+            background-color: var(--accent-color); color: white;
             align-self: flex-end; border-bottom-right-radius: 5px;
         }
         .message-bubble.received {
@@ -243,7 +245,7 @@
             border: none; background: var(--text-color); cursor: pointer;
             display: flex; align-items: center; justify-content: center; padding: 0;
         }
-        #send-button svg { width: 20px; height: 20px; fill: white; }
+        #send-button svg { width: 20px; height: 20px; fill: var(--primary-bg); }
 
         #call-view { background-color: #000; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
@@ -255,11 +257,11 @@
         #audio-call-view { justify-content: center; align-items: center; text-align: center; }
         #audio-call-view::before {
              content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-             background: linear-gradient(135deg, #16213e, #0f3460, #e94560);
+             background: linear-gradient(155deg, #00d9a6 0%, #0d0d1e 50%, #7f00ff 100%);
              background-size: 400% 400%; animation: gradientAnimation 15s ease infinite; z-index: -1;
         }
         body.light-mode #audio-call-view::before {
-             background: linear-gradient(135deg, #87ceeb, #add8e6, #4682b4); background-size: 400% 400%;
+             background: linear-gradient(135deg, #c5fdfb, #e0c8ff); background-size: 400% 400%;
         }
         #audio-callee-emoji { font-size: 6rem; }
         #audio-callee-name { font-size: 2rem; font-weight: bold; margin-top: 15px; }
@@ -272,7 +274,7 @@
             width: 70px; height: 70px; border-radius: 50%; border: none;
             display: flex; justify-content: center; align-items: center; cursor: pointer; color: white;
         }
-        .end-call-btn { background-color: #e94560; }
+        .end-call-btn { background-color: var(--red-badge); }
         .end-call-btn svg { width: 35px; height: 35px; fill: white; transform: rotate(135deg); }
         .speaker-btn { background-color: rgba(255, 255, 255, 0.2); }
         .speaker-btn.active { background-color: var(--accent-color); }
@@ -292,7 +294,7 @@
         .modal-content p { color: var(--text-light); opacity: 0.9; }
         .modal-btn-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .modal-btn { flex: 1; padding: 12px; border-radius: 50px; border: none; color: white; font-weight: bold; cursor: pointer; }
-        .modal-btn.primary { background-color: var(--text-color); }
+        .modal-btn.primary { background-color: var(--text-color); color: var(--primary-bg); }
         .modal-btn.secondary { background-color: var(--accent-color); }
         #incoming-call-emoji { font-size: 4rem; }
         .menu-list { display: flex; flex-direction: column; width: 100%; }
@@ -303,6 +305,7 @@
         }
         .menu-item:last-child { border-bottom: none; }
         .menu-item:hover { background-color: var(--accent-color); }
+        .menu-item#menu-logout-btn { color: var(--red-badge); }
     </style>
 </head>
 <body>
@@ -411,18 +414,17 @@
     <div id="user-details-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Welcome to HaiCalling!</h3><p>Please set up your profile.</p><input type="text" id="user-name-input" class="input-field" placeholder="Your Name"><input type="text" id="user-emoji-input" class="input-field" placeholder="Your Emoji (e.g., 😊)"><div class="modal-btn-group"><button id="save-user-details-btn" class="modal-btn primary">Save</button></div></div></div>
     <div id="add-friend-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Add a Friend</h3><p>Enter your friend's HaiCalling ID (e.g., hai-xxxx).</p><input type="text" id="friend-id-input" class="input-field" placeholder="hai-xxxx"><div id="friend-search-result" style="margin-top: 15px;"></div><div class="modal-btn-group"><button id="search-friend-btn" class="modal-btn primary">Search</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
     <div id="incoming-call-modal" class="modal-overlay"><div class="modal-content glass-ui"><div id="incoming-call-emoji" style="font-size: 4rem;"></div><h3 id="incoming-call-name"></h3><p id="incoming-call-type"></p><div class="modal-btn-group"><button id="accept-call-btn" class="modal-btn" style="background-color: #28a745;">Accept</button><button id="reject-call-btn" class="modal-btn" style="background-color: #dc3545;">Reject</button></div></div></div>
-    <div id="menu-modal" class="modal-overlay"><div class="modal-content glass-ui"><div class="menu-list"><button class="menu-item" id="menu-profile-btn">Profile</button><button class="menu-item" id="menu-blocked-btn">Blocked Users</button><button class="menu-item" id="menu-theme-btn">Toggle Theme</button><button class="menu-item" id="menu-logout-btn" style="color: var(--text-color);">Logout</button><button class="menu-item" data-close>Close Menu</button></div></div></div>
+    <div id="menu-modal" class="modal-overlay"><div class="modal-content glass-ui"><div class="menu-list"><button class="menu-item" id="menu-profile-btn">Profile</button><button class="menu-item" id="menu-blocked-btn">Blocked Users</button><button class="menu-item" id="menu-theme-btn">Toggle Theme</button><button class="menu-item" id="menu-logout-btn">Logout</button><button class="menu-item" data-close>Close Menu</button></div></div></div>
     <div id="profile-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Your Profile</h3><p id="profile-id-display"></p><input type="text" id="profile-name-input" class="input-field"><input type="text" id="profile-emoji-input" class="input-field"><div class="modal-btn-group"><button id="save-profile-btn" class="modal-btn primary">Save</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
     <div id="blocked-users-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Blocked Users</h3><div id="blocked-users-list" style="max-height: 200px; overflow-y: auto; width: 100%;"></div><div class="modal-btn-group"><button class="modal-btn secondary" data-close>Close</button></div></div></div>
     <div id="alert-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="alert-title">Alert</h3><p id="alert-message"></p><div class="modal-btn-group"><button class="modal-btn primary" data-close>OK</button></div></div></div>
-    <div id="contact-options-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--text-color);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--text-color);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
+    <div id="contact-options-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-badge);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-badge);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
 
     <!-- Audio Elements -->
     <audio id="incoming-call-audio" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" loop></audio>
     <audio id="message-tone-audio" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU9vT19PAAC2e/j9+fT+5/v/8/r/4/sA9vr//fD99v7/+f4A/Pn7/v78+fj6+vj1+Pb5//z2+f/6+v3/+vn5/vz6+f77/vz/+v7/+v3/+/z9/Pz6/P/6+v78/f79/v7/+fn+9/3/+vv9/fn99/z/+v3/+/7/+//7/v3+9/3//f79/vv9/f7/+vz+9vz/+v/+/P/++/3//v3/+/z/+vz9+fn++/7++/7++/79/P38/f78/v3++/79/v3+/P3+/f/6/v7+/f37/vv+9/7/+/7/+v3/+/z9+/v9/vv9+Pv8/v/8/v/6/vv++v7/+v/+/f/6/v7/+vv9/v3/+/7++/z/+v7++/79/v7/+v3/+v3/+v7/+/79+/7+///++/7//v/8/v/++/7//v3/+/z/+v/+/v/6/v/++/7//v3/+/7++/7/+v3/+v/7/vv+"></audio>
     
     <script>
-    // --- START OF REPLACED JAVASCRIPT ---
     (() => {
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -957,7 +959,7 @@
             if (isDragging) {
                 let x=e.clientX-dragOffsetX, y=e.clientY-dragOffsetY, pRect=localVideo.parentElement.getBoundingClientRect();
                 x=Math.max(0,Math.min(x,pRect.width-localVideo.offsetWidth));y=Math.max(0,Math.min(y,pRect.height-localVideo.offsetHeight));
-                localVideo.style.left=`${x}px`;localVideo.style.top=`${y}px`;localVideo.style.right='auto';localVideo.style.bottom='auto';
+                localVideo.style.left=`${x}px`;localVideo.style.top=`${y}px`;local.style.right='auto';localVideo.style.bottom='auto';
             }
         });
         document.addEventListener('pointerup', e => { isDragging=false;localVideo.style.cursor='grab';localVideo.releasePointerCapture(e.pointerId);});
@@ -966,7 +968,6 @@
         document.getElementById('speaker-btn').addEventListener('click', ()=>{isSpeakerOn=!isSpeakerOn;document.getElementById('speaker-btn').classList.toggle('active', isSpeakerOn);});
 
     })();
-    // --- END OF REPLACED JAVASCRIPT ---
     </script>
 
 </body>
