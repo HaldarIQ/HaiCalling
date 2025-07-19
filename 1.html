@@ -790,8 +790,17 @@
             peerConnection = new RTCPeerConnection(servers);
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
             
-            peerConnection.ontrack = e => {
-                document.getElementById('remote-video').srcObject = e.streams[0];
+            // FIXED: More robust ontrack handler to prevent asymmetric video issues.
+            peerConnection.ontrack = (event) => {
+                const remoteVideo = document.getElementById('remote-video');
+                if (event.streams && event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                } else {
+                    if (!remoteVideo.srcObject) {
+                        remoteVideo.srcObject = new MediaStream();
+                    }
+                    remoteVideo.srcObject.addTrack(event.track);
+                }
             };
             
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
@@ -840,10 +849,11 @@
             callListeners.ice = iceCandidateRef;
             iceCandidateRef.on('child_added', s => { 
                 if (s.exists()) {
+                    const candidate = new RTCIceCandidate(s.val());
                     if (peerConnection && peerConnection.remoteDescription) {
-                        peerConnection.addIceCandidate(new RTCIceCandidate(s.val()));
+                        peerConnection.addIceCandidate(candidate);
                     } else {
-                        remoteCandidates.push(s.val());
+                        remoteCandidates.push(candidate);
                     }
                 }
             });
