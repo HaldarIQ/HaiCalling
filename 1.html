@@ -57,11 +57,12 @@
             overflow: hidden; 
         }
 
+        /* MODIFIED: New animated background applied to the body */
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #16213e, #0f3460, #e94560);
+            background: linear-gradient(135deg, #00a79d, #121d34, #4f2683);
             background-size: 400% 400%;
             animation: gradientAnimation 15s ease infinite;
             color: var(--text-light);
@@ -137,6 +138,23 @@
         .auth-button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-color); }
         .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; }
         #auth-error, #auth-error-signup { color: var(--red-badge); margin-top: 15px; min-height: 20px; }
+
+        /* ADDED: Styling for the new welcome element */
+        #welcome-element {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* Make it transparent to show the body's animated background */
+            background-color: transparent;
+            z-index: 300; /* Ensure it's on top */
+            transform: translateX(0); /* Make it visible initially */
+        }
+        #welcome-element h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
         
         .top-bar {
             width: 100%; padding: 15px 20px; display: flex; justify-content: space-between;
@@ -310,7 +328,13 @@
 
     <div class="app-container">
         
-        <div id="auth-view" class="view active">
+        <!-- ADDED: New welcome element -->
+        <div id="welcome-element" class="view active">
+            <h1>Welcome Back</h1>
+        </div>
+
+        <!-- MODIFIED: Removed 'active' class so it doesn't show initially -->
+        <div id="auth-view" class="view">
             <h1>HaiCalling</h1>
             <div id="login-form" class="auth-form">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
@@ -452,7 +476,8 @@
         const incomingCallAudio = document.getElementById('incoming-call-audio');
         const messageToneAudio = document.getElementById('message-tone-audio');
         
-        let activeView = 'auth-view';
+        // MODIFIED: Start on the new welcome element
+        let activeView = 'welcome-element';
         function showView(viewId) {
             document.getElementById(activeView)?.classList.remove('active');
             document.getElementById(viewId)?.classList.add('active');
@@ -472,7 +497,12 @@
             } else {
                 currentUser = null;
                 cleanupApp();
-                showView('auth-view');
+                // MODIFIED: Transition from welcome to auth view
+                setTimeout(() => {
+                    if (!auth.currentUser) {
+                        showView('auth-view');
+                    }
+                }, 2500); // 2.5 second delay
             }
         });
 
@@ -791,7 +821,7 @@
             
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
             
-            // FIXED: Standard and reliable ontrack handler for both video and audio.
+            // FIXED: Reverted to the most reliable method for handling remote streams
             peerConnection.ontrack = (event) => {
                 const remoteVideo = document.getElementById('remote-video');
                 if (remoteVideo.srcObject !== event.streams[0]) {
