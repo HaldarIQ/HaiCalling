@@ -440,7 +440,7 @@
 
         let currentUser = null, currentChatId = null, currentChatPeer = null;
         let messageListeners = {}, unreadListeners = {}, callListeners = {};
-        let peerConnection, localStream, remoteStream, currentCallData = null, isSpeakerOn = false;
+        let peerConnection, localStream, currentCallData = null, isSpeakerOn = false;
         let remoteCandidates = [];
         
         const homePage = document.getElementById('home-page');
@@ -791,14 +791,12 @@
             
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
             
-            // FIXED: This is the most robust way to handle the remote stream
-            remoteStream = new MediaStream();
-            document.getElementById('remote-video').srcObject = remoteStream;
-
+            // FIXED: Standard and reliable ontrack handler for both video and audio.
             peerConnection.ontrack = (event) => {
-                event.streams[0].getTracks().forEach(track => {
-                    remoteStream.addTrack(track);
-                });
+                const remoteVideo = document.getElementById('remote-video');
+                if (remoteVideo.srcObject !== event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                }
             };
             
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
@@ -873,7 +871,6 @@
             }
 
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-            if (remoteStream) { remoteStream.getTracks().forEach(t => t.stop()); remoteStream = null; }
             
             if (currentCallData) {
                 const callId = currentCallData.callId;
