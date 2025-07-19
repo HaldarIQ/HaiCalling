@@ -66,7 +66,7 @@
         .screen { display: none; flex-direction: column; width: 100%; height: 100%; }
         .screen.active { display: flex; }
 
-        /* --- MODIFIED: Authentication Screen Centering --- */
+        /* --- Authentication Screen Centering --- */
         #auth-screen { 
             justify-content: center; 
             align-items: center; 
@@ -76,24 +76,22 @@
         .auth-form {
             width: 100%;
             max-width: 340px;
-            padding: 30px 25px; /* Increased padding */
+            padding: 30px 25px;
             border-radius: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px; /* Increased gap */
+            gap: 20px;
         }
         .auth-form h1 { 
-            text-align: center; /* Ensures title is centered */
+            text-align: center;
             color: var(--primary-text); 
             font-weight: 600; 
-            margin: 0 0 10px 0; /* Added bottom margin */
+            margin: 0 0 10px 0;
         }
-
-        /* Views inside the form for better control */
         #login-view, #register-view {
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Gap for items inside the view */
+            gap: 15px;
         }
         
         /* Inputs & Buttons */
@@ -104,7 +102,7 @@
             font-size: 16px;
             background-color: var(--input-bg);
             color: var(--primary-text);
-            text-align: center; /* Center placeholder and input text */
+            text-align: center;
         }
         input:focus { outline: 2px solid var(--accent-color); }
 
@@ -120,17 +118,15 @@
             transition: transform 0.2s ease;
         }
         button:active { transform: scale(0.97); }
-
         .link-button { 
             background: none; 
             color: var(--accent-color); 
             font-size: 14px; 
             font-weight: 500;
-            width: auto; /* Allow button to shrink to its content */
-            align-self: center; /* Center horizontally in the flex container */
+            width: auto;
+            align-self: center;
             padding: 5px;
         }
-        /* --- End of Centering Modifications --- */
 
         /* Header and Footer */
         .app-header, .app-footer {
@@ -306,17 +302,17 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script>
-        // --- IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        // --- YOUR FIREBASE CONFIGURATION IS PASTED HERE ---
         const firebaseConfig = {
           apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
           authDomain: "haicalling.firebaseapp.com",
           databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
           projectId: "haicalling",
-          storageBucket: "haicalling.firebasestorage.app",
+          storageBucket: "haicalling.appspot.com", // Corrected storage bucket URL
           messagingSenderId: "379823659600",
           appId: "1:379823659600:web:d86fb74951ce52206b4f55"
         };
-        // ---------------------------------------------------------
+        // --------------------------------------------------
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -397,7 +393,8 @@
             auth.createUserWithEmailAndPassword(email, password).catch(err => alert(err.message));
         });
 
-        document.getElementById('forgot-password-btn').addEventListener('click', () => {
+        document.getElementById('forgot-password-btn').addEventListener('click', ().
+        {
             const email = prompt("Please enter your email to reset your password:");
             if(email) {
                 auth.sendPasswordResetEmail(email)
@@ -417,18 +414,28 @@
             }
             const uniqueCode = `haicalling_${Math.random().toString(36).substr(2, 9)}`;
             
-            await db.collection('users').doc(currentUser.uid).set({
-                username: username,
-                email: currentUser.email,
-                uniqueCode: uniqueCode,
-                uid: currentUser.uid
-            });
-            
-            hideModal('profile-setup-modal');
-            showModal('success-popup');
-            await setupAppForUser();
-            showScreen('home-page');
+            try {
+                await db.collection('users').doc(currentUser.uid).set({
+                    username: username,
+                    email: currentUser.email,
+                    uniqueCode: uniqueCode,
+                    uid: currentUser.uid
+                });
+                
+                hideModal('profile-setup-modal');
+                showModal('success-popup');
+                await setupAppForUser();
+            } catch (error) {
+                console.error("Error saving profile: ", error);
+                alert("Could not save profile. Check Firestore rules and database setup.");
+            }
         });
+        
+        document.querySelector('#success-popup button').addEventListener('click', () => {
+             hideModal('success-popup');
+             showScreen('home-page');
+        });
+
 
         // --- Navigation and UI Toggles ---
         document.getElementById('show-register-btn').addEventListener('click', () => {
@@ -505,4 +512,4 @@
         
     </script>
 </body>
-</html>
+</html>```
