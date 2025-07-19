@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>HaiCalling</title>
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <style>
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #f0f2f5;
             --text-color: #333;
-            --header-height: 50px;
-            --tab-bar-height: 60px;
         }
 
         html, body {
@@ -23,418 +21,315 @@
             background-color: var(--secondary-color);
         }
 
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh; /* Viewport Height */
-            width: 100vw;  /* Viewport Width */
-        }
-
-        .header {
-            height: var(--header-height);
-            background-color: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
+        /* --- App Structure & Page Management --- */
         .page {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: white;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .page.hidden {
-            transform: translateX(100%);
-        }
-        #call-page.hidden {
-            transform: translateX(-100%);
-        }
-
-        /* --- Call Page Styles --- */
-        #call-page { z-index: 10; }
-        .video-area {
-            flex-grow: 1;
-            position: relative;
-            background-color: #000;
-        }
-        #remoteVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #localVideo {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 100px;
-            height: auto;
-            border-radius: 8px;
-            border: 2px solid white;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-            z-index: 100;
-        }
-        .call-actions {
-            position: absolute;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            z-index: 100;
-        }
-        .call-actions button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: none;
-            font-size: 24px;
-            color: white;
-            cursor: pointer;
-        }
-        #hangupBtn { background-color: #f44336; }
-        .call-setup { padding: 20px; text-align: center; }
-        #call-id-input { width: 80%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 15px; }
-        #startCallBtn { background-color: #4CAF50; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-size: 18px; }
-
-
-        /* --- Chat Page Styles --- */
-        #chat-page { z-index: 9; }
-        #chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .message-bubble {
-            padding: 10px 15px;
-            border-radius: 18px;
-            max-width: 75%;
-            background-color: var(--secondary-color);
-            align-self: flex-start; /* Default to received */
-            word-wrap: break-word;
-        }
-        /* In a real app you'd add a class for sent messages to align them right */
-
-        #chat-form {
-            display: flex;
-            padding: 10px;
-            border-top: 1px solid #ddd;
-            background-color: #fff;
-            flex-shrink: 0;
-        }
-        #message-input {
-            flex-grow: 1;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-            padding: 10px 15px;
-            font-size: 16px;
-            margin-right: 10px;
-        }
-        #chat-form button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            flex-shrink: 0;
-            font-size: 18px;
-        }
-
-
-        /* --- Tab Bar Styles --- */
-        .tab-bar {
-            height: var(--tab-bar-height);
-            display: flex;
-            background-color: #ffffff;
-            border-top: 1px solid #ddd;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
-            flex-shrink: 0;
-        }
-
-        .tab-item {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #999;
-            cursor: pointer;
-            font-size: 12px;
+            background-color: #ffffff;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            z-index: 100;
         }
-        .tab-item i { font-size: 22px; margin-bottom: 4px; }
-        .tab-item.active { color: var(--primary-color); }
+
+        .page.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.1);
+        }
+
+        /* --- Login/Register Page --- */
+        #auth-page .container {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        #auth-page h1 { color: var(--primary-color); }
+        #auth-page input {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        #auth-page button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #auth-page .links { margin-top: 20px; }
+        #auth-page .links a { color: var(--primary-color); text-decoration: none; }
+
+        /* --- Profile Setup Page --- */
+        #profile-setup-page .container { width: 90%; max-width: 400px; text-align: center; }
+        #profile-setup-page h2 { color: var(--text-color); }
+        #profile-setup-page input {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        #profile-setup-page button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #profile-setup-page p { color: #888; font-size: 14px; }
+
+
+        /* --- Welcome Page --- */
+        #welcome-page h1 { font-size: 48px; color: var(--primary-color); }
+
+        /* --- Home Screen --- */
+        #home-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #home-screen.visible { opacity: 1; pointer-events: auto; }
+
+        .home-header {
+            height: 60px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+        .app-name { font-size: 22px; font-weight: bold; color: var(--primary-color); }
+        .add-friend-btn {
+            background: none; border: none; font-size: 24px;
+            color: var(--primary-color); cursor: pointer;
+        }
+
+        .home-content {
+            flex-grow: 1;
+            background-color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .home-footer {
+            height: 65px;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+        .footer-btn {
+            background: none; border: none;
+            display: flex; flex-direction: column;
+            align-items: center;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .footer-btn i { font-size: 24px; margin-bottom: 4px; }
+        .footer-btn.active { color: var(--primary-color); }
+
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <div class="header">HaiCalling</div>
-
-        <main class="main-content">
-            <!-- Call Page -->
-            <div class="page" id="call-page">
-                <div class="video-area">
-                    <video id="remoteVideo" autoplay playsinline></video>
-                    <video id="localVideo" muted autoplay playsinline></video>
-                    <div class="call-actions">
-                        <button id="hangupBtn" disabled><i class="fas fa-phone-slash"></i></button>
-                    </div>
-                </div>
-                <div class="call-setup">
-                    <input type="text" id="call-id-input" placeholder="Enter a unique Call ID">
-                    <button id="startCallBtn">Start Call</button>
-                </div>
+    <!-- =========== PAGE 1: LOGIN / REGISTER =========== -->
+    <div class="page" id="auth-page">
+        <div class="container">
+            <h1>HaiCalling</h1>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <div class="links">
+                <a href="#" id="show-register-link">Don't have an account? Register</a><br><br>
+                <a href="#" id="forgot-password-link">Forgot Password?</a>
             </div>
+            <!-- A register form can be toggled here -->
+        </div>
+    </div>
 
-            <!-- Chat Page -->
-            <div class="page" id="chat-page">
-                <div id="chat-messages"></div>
-                <form id="chat-form">
-                    <input type="text" id="message-input" placeholder="Type a message..." required>
-                    <button type="submit"><i class="fas fa-paper-plane"></i></button>
-                </form>
+    <!-- =========== PAGE 2: PROFILE SETUP =========== -->
+    <div class="page hidden" id="profile-setup-page">
+        <div class="container">
+            <h2>Set Up Your Profile</h2>
+            <p>This information will be visible to your friends.</p>
+            <form id="profile-form">
+                <input type="text" id="profile-name" placeholder="Your Name" required>
+                <input type="text" id="profile-dob" placeholder="Date of Birth" onfocus="(this.type='date')" onblur="(this.type='text')" required>
+                <input type="url" id="profile-image" placeholder="Link to your Profile Image/Emoji" required>
+                <button type="submit">Save and Continue</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========== PAGE 3: WELCOME MESSAGE =========== -->
+    <div class="page hidden" id="welcome-page">
+        <h1>Welcome!</h1>
+    </div>
+
+    <!-- =========== PAGE 4: HOME SCREEN =========== -->
+    <div id="home-screen">
+        <header class="home-header">
+            <span class="app-name">HaiCalling</span>
+            <button class="add-friend-btn"><i class="fas fa-user-plus"></i></button>
+        </header>
+
+        <main class="home-content">
+            <div>
+                <h2>Home Content</h2>
+                <p>Friend list, chats, or call history would go here.</p>
             </div>
         </main>
 
-        <nav class="tab-bar">
-            <div class="tab-item" id="call-tab">
-                <i class="fas fa-video"></i>
-                <span>Call</span>
-            </div>
-            <div class="tab-item active" id="chat-tab">
-                <i class="fas fa-comment-dots"></i>
-                <span>Chat</span>
-            </div>
-        </nav>
+        <footer class="home-footer">
+            <button class="footer-btn">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+            </button>
+            <button class="footer-btn active">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </button>
+            <button class="footer-btn">
+                <i class="fas fa-phone"></i>
+                <span>Calling</span>
+            </button>
+        </footer>
     </div>
+
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <script>
         // --- SECURITY WARNING ---
-        // DO NOT use publicly exposed API keys in a real application.
-        // 1. Generate a NEW key in your Google Cloud Console.
-        // 2. RESTRICT the new key to your website's domain (HTTP referrer).
-        // 3. SECURE your Firestore rules in the Firebase Console.
+        // Ensure you have generated and restricted a NEW API key
+        // and secured your Firestore rules.
         const firebaseConfig = {
             apiKey: "YOUR_NEW_RESTRICTED_API_KEY",
             authDomain: "haicalling.firebaseapp.com",
             databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "haicalling",
-            storageBucket: "haicalling.appspot.com", // Corrected storage bucket name
+            storageBucket: "haicalling.appspot.com",
             messagingSenderId: "379823659600",
             appId: "1:379823659600:web:d86fb74951ce52206b4f55"
         };
 
         // --- INITIALIZE FIREBASE ---
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- UI & TAB NAVIGATION ---
-        const callPage = document.getElementById('call-page');
-        const chatPage = document.getElementById('chat-page');
-        const callTab = document.getElementById('call-tab');
-        const chatTab = document.getElementById('chat-tab');
+        // --- PAGE ELEMENTS ---
+        const authPage = document.getElementById('auth-page');
+        const profileSetupPage = document.getElementById('profile-setup-page');
+        const welcomePage = document.getElementById('welcome-page');
+        const homeScreen = document.getElementById('home-screen');
+        
+        // --- FORM ELEMENTS ---
+        const loginForm = document.getElementById('login-form');
+        const profileForm = document.getElementById('profile-form');
 
-        function showPage(pageToShow) {
-            if (pageToShow === 'chat') {
-                chatPage.classList.remove('hidden');
-                callPage.classList.add('hidden');
-                chatTab.classList.add('active');
-                callTab.classList.remove('active');
+        // --- APP LOGIC ---
+
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            
+            // Hide home screen
+            homeScreen.classList.remove('visible');
+
+            if (pageId === 'home-screen') {
+                homeScreen.classList.add('visible');
             } else {
-                callPage.classList.remove('hidden');
-                chatPage.classList.add('hidden');
-                callTab.classList.add('active');
-                chatTab.classList.remove('active');
+                const pageToShow = document.getElementById(pageId);
+                if(pageToShow) {
+                    pageToShow.classList.remove('hidden');
+                }
             }
         }
 
-        callTab.addEventListener('click', () => showPage('call'));
-        chatTab.addEventListener('click', () => showPage('chat'));
+        // --- EVENT LISTENERS (Simulating the Flow) ---
 
-        // Set initial page
-        showPage('chat'); // Start on the chat page
-
-        // --- CHAT FUNCTIONALITY ---
-        const chatForm = document.getElementById('chat-form');
-        const messageInput = document.getElementById('message-input');
-        const chatMessages = document.getElementById('chat-messages');
-
-        db.collection('messages').orderBy('createdAt').onSnapshot(snapshot => {
-            chatMessages.innerHTML = '';
-            snapshot.forEach(doc => {
-                const message = doc.data();
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                bubble.textContent = message.text;
-                chatMessages.appendChild(bubble);
-            });
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
-
-        chatForm.addEventListener('submit', (e) => {
+        // 1. When Login form is submitted
+        loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const text = messageInput.value;
-            if (text.trim() !== '') {
-                db.collection('messages').add({
-                    text: text,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    // In a real app, you would add a `uid` from Firebase Auth
-                });
-                messageInput.value = '';
-            }
-        });
-
-        // --- VIDEO & VOICE CALL FUNCTIONALITY (WebRTC) ---
-        // (This JavaScript logic is largely the same as before)
-        const startCallBtn = document.getElementById('startCallBtn');
-        const hangupBtn = document.getElementById('hangupBtn');
-        const localVideo = document.getElementById('localVideo');
-        const remoteVideo = document.getElementById('remoteVideo');
-        const callIdInput = document.getElementById('call-id-input');
-
-        let localStream;
-        let remoteStream;
-        let peerConnection;
-        
-        const servers = {
-            iceServers: [
-                { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
-            ],
-            iceCandidatePoolSize: 10,
-        };
-        
-        const setupCall = async (callId) => {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localVideo.srcObject = localStream;
-            hangupBtn.disabled = false;
-        };
-
-        const createPeerConnection = (callId) => {
-            peerConnection = new RTCPeerConnection(servers);
-            remoteStream = new MediaStream();
-            remoteVideo.srcObject = remoteStream;
-
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-
-            peerConnection.ontrack = event => {
-                event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-            };
-        };
-
-        // Caller Logic
-        startCallBtn.onclick = async () => {
-            const callId = callIdInput.value;
-            if (!callId) {
-                alert('Please enter a unique Call ID.');
-                return;
-            }
-            await setupCall(callId);
-            createPeerConnection(callId);
-
-            const callDoc = db.collection('calls').doc(callId);
-            const offerCandidates = callDoc.collection('offerCandidates');
+            // In a REAL app, you would use Firebase Auth here:
+            // auth.signInWithEmailAndPassword(email, password)
+            // .then((userCredential) => {
+            //   // Check if user has a profile in Firestore
+            //   // If not, go to profile setup. If yes, go to welcome.
+            // })
             
-            peerConnection.onicecandidate = event => {
-                event.candidate && offerCandidates.add(event.candidate.toJSON());
-            };
-
-            const offerDescription = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offerDescription);
-            await callDoc.set({ offer: { sdp: offerDescription.sdp, type: offerDescription.type } });
-
-            callDoc.onSnapshot((snapshot) => {
-                const data = snapshot.data();
-                if (!peerConnection.currentRemoteDescription && data?.answer) {
-                    const answerDescription = new RTCSessionDescription(data.answer);
-                    peerConnection.setRemoteDescription(answerDescription);
-                }
-            });
-
-            callDoc.collection('answerCandidates').onSnapshot(snapshot => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-                    }
-                });
-            });
-        };
-
-        // Answerer Logic (simplified listener)
-        // A more robust app would have a dedicated "Join Call" button.
-        db.collection('calls').onSnapshot(snapshot => {
-            snapshot.docChanges().forEach(async (change) => {
-                if (change.type === 'added') {
-                    const callId = change.doc.id;
-                    if (callId === callIdInput.value && !peerConnection) {
-                        await setupCall(callId);
-                        createPeerConnection(callId);
-                        
-                        const callDoc = db.collection('calls').doc(callId);
-                        const answerCandidates = callDoc.collection('answerCandidates');
-                        
-                        peerConnection.onicecandidate = event => {
-                            event.candidate && answerCandidates.add(event.candidate.toJSON());
-                        };
-
-                        const callData = change.doc.data();
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
-
-                        const answerDescription = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answerDescription);
-                        await callDoc.update({ answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
-                        
-                        callDoc.collection('offerCandidates').onSnapshot(snap => {
-                            snap.docChanges().forEach(c => {
-                                if (c.type === 'added') {
-                                    peerConnection.addIceCandidate(new RTCIceCandidate(c.doc.data()));
-                                }
-                            });
-                        });
-                    }
-                }
-            });
+            console.log("Login submitted. Simulating success...");
+            showPage('profile-setup-page'); // Go to next step
         });
         
-        hangupBtn.onclick = () => {
-             if (peerConnection) {
-                peerConnection.close();
+        // 2. When Profile Setup form is submitted
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // In a REAL app, you would save this data to Firestore:
+            // const user = auth.currentUser;
+            // db.collection('users').doc(user.uid).set({
+            //   name: document.getElementById('profile-name').value,
+            //   dob: document.getElementById('profile-dob').value,
+            //   imageUrl: document.getElementById('profile-image').value
+            // })
+            
+            console.log("Profile setup submitted. Simulating success...");
+            showPage('welcome-page'); // Go to Welcome screen
+
+            // 3. After Welcome, redirect to Home
+            setTimeout(() => {
+                showPage('home-screen');
+            }, 2000); // Wait 2 seconds on the welcome screen
+        });
+        
+        // --- Initial State ---
+        // On app load, check if the user is already logged in
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in.
+                console.log("User already logged in.");
+                showPage('home-screen'); // Go directly to home
+            } else {
+                // User is signed out.
+                console.log("No user signed in. Showing auth page.");
+                showPage('auth-page'); // Start at the login page
             }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
-            peerConnection = null;
-            hangupBtn.disabled = true;
-            // Optionally: Clean up the Firestore document
-        };
+        });
 
     </script>
 </body>
-</html>```
+</html>
