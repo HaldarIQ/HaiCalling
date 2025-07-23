@@ -415,7 +415,7 @@
     <div id="add-friend-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Add a Friend</h3><p>Enter your friend's HaiCalling ID (e.g., hai-xxxx).</p><input type="text" id="friend-id-input" class="input-field" placeholder="hai-xxxx"><div id="friend-search-result" style="margin-top: 15px;"></div><div class="modal-btn-group"><button id="search-friend-btn" class="modal-btn primary">Search</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
     <div id="incoming-call-modal" class="modal-overlay"><div class="modal-content glass-ui"><div id="incoming-call-emoji" style="font-size: 4rem;"></div><h3 id="incoming-call-name"></h3><p id="incoming-call-type"></p><div class="modal-btn-group"><button id="accept-call-btn" class="modal-btn" style="background-color: #28a745;">Accept</button><button id="reject-call-btn" class="modal-btn" style="background-color: #dc3545;">Reject</button></div></div></div>
     <div id="menu-modal" class="modal-overlay"><div class="modal-content glass-ui"><div class="menu-list"><button class="menu-item" id="menu-profile-btn">Profile</button><button class="menu-item" id="menu-blocked-btn">Blocked Users</button><button class="menu-item" id="menu-theme-btn">Toggle Theme</button><button class="menu-item" id="menu-logout-btn">Logout</button><button class="menu-item" data-close>Close Menu</button></div></div></div>
-    <div id="profile-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Your Profile</h3><p id="profile-id-display"></p><input type="text" id="profile-name-input" class="input-field"><input type="text" id="profile-emoji-input" class="input-field"><div class="modal-btn-group"><button id="save-profile-btn" class="modal-btn primary">Save</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
+    <div id="profile-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Your Profile</h3><div style="display: flex; align-items: center; justify-content: center; gap: 10px;"><p id="profile-id-display" style="margin: 0;"></p><button id="copy-id-btn" title="Copy ID" style="background: transparent; border: none; cursor: pointer; padding: 5px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--text-color)"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path></svg></button></div><input type="text" id="profile-name-input" class="input-field"><input type="text" id="profile-emoji-input" class="input-field"><div class="modal-btn-group"><button id="save-profile-btn" class="modal-btn primary">Save</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
     <div id="blocked-users-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Blocked Users</h3><div id="blocked-users-list" style="max-height: 200px; overflow-y: auto; width: 100%;"></div><div class="modal-btn-group"><button class="modal-btn secondary" data-close>Close</button></div></div></div>
     <div id="alert-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="alert-title">Alert</h3><p id="alert-message"></p><div class="modal-btn-group"><button class="modal-btn primary" data-close>OK</button></div></div></div>
     <div id="contact-options-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-badge);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-badge);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
@@ -474,7 +474,9 @@
                     if (snapshot.exists()) {
                         currentUser = { uid: user.uid, ...snapshot.val() };
                         initializeApp();
-                    } else { showModal('user-details-modal'); }
+                    } else {
+                        showModal('user-details-modal');
+                    }
                 });
             } else {
                 currentUser = null;
@@ -484,28 +486,60 @@
         });
 
         // Listeners for switching between Login and Signup
-        document.getElementById('show-signup').addEventListener('click', () => { document.getElementById('login-form').style.display = 'none'; document.getElementById('signup-form').style.display = 'block'; });
-        document.getElementById('show-login').addEventListener('click', () => { document.getElementById('signup-form').style.display = 'none'; document.getElementById('login-form').style.display = 'block'; });
+        document.getElementById('show-signup').addEventListener('click', () => { 
+            document.getElementById('login-form').style.display = 'none'; 
+            document.getElementById('signup-form').style.display = 'block';
+            document.getElementById('auth-error').textContent = ''; 
+        });
+        document.getElementById('show-login').addEventListener('click', () => { 
+            document.getElementById('signup-form').style.display = 'none'; 
+            document.getElementById('login-form').style.display = 'block'; 
+            document.getElementById('auth-error-signup').textContent = '';
+        });
         
         // Listeners for Login and Signup buttons
         document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => document.getElementById('auth-error').textContent = err.message); });
         document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => document.getElementById('auth-error-signup').textContent = err.message); });
         
-        // Listener to save new user details
+        // Listener to save new user details and automatically log in
         document.getElementById('save-user-details-btn').addEventListener('click', () => {
             const name = document.getElementById('user-name-input').value.trim();
             const emoji = document.getElementById('user-emoji-input').value.trim();
             if (name && emoji) {
                 const user = auth.currentUser;
+                if (!user) return; // Safety check
+
                 const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
-                db.ref(`users/${user.uid}`).set({ name, emoji, email: user.email, userId, callStatus: 'available' }).then(() => hideModal('user-details-modal'));
+                const newUserProfile = { 
+                    name, 
+                    emoji, 
+                    email: user.email, 
+                    userId, 
+                    callStatus: 'available' 
+                };
+                
+                db.ref(`users/${user.uid}`).set(newUserProfile).then(() => {
+                    // Profile saved, now set the global user and initialize the app
+                    currentUser = { uid: user.uid, ...newUserProfile };
+                    initializeApp();
+                    hideModal('user-details-modal');
+                }).catch(err => {
+                    console.error("Error saving profile: ", err);
+                    showAlert('Profile Error', 'Could not save your profile. Please try again.');
+                });
+            } else {
+                showAlert('Profile Incomplete', 'Please provide a name and an emoji.');
             }
         });
 
         // --- App Initialization and Cleanup ---
         function initializeApp() {
             showView('main-app-view');
-            setupPresence(); loadContacts(); loadNotifications(); listenForCalls(); loadCallHistory();
+            setupPresence(); 
+            loadContacts(); 
+            loadNotifications(); 
+            listenForCalls(); 
+            loadCallHistory();
         }
         
         function cleanupApp() {
@@ -901,6 +935,20 @@
              document.getElementById('profile-emoji-input').value = currentUser.emoji;
              hideModal('menu-modal'); showModal('profile-modal');
         });
+
+        document.getElementById('copy-id-btn').addEventListener('click', () => {
+            const profileIdText = document.getElementById('profile-id-display').textContent;
+            const profileId = profileIdText.split(': ')[1];
+            if (profileId) {
+                navigator.clipboard.writeText(profileId).then(() => {
+                    showAlert('Copied!', `Your ID (${profileId}) has been copied to the clipboard.`);
+                }).catch(err => {
+                    console.error('Failed to copy ID: ', err);
+                    showAlert('Error', 'Could not copy the ID to your clipboard.');
+                });
+            }
+        });
+
         document.getElementById('save-profile-btn').addEventListener('click', () => {
             const newName = document.getElementById('profile-name-input').value.trim();
             if(newName) { db.ref(`users/${currentUser.uid}/name`).set(newName); currentUser.name = newName; }
