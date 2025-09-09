@@ -52,6 +52,40 @@
             color: var(--text-color);
             min-height: 100vh;
         }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Initially hidden */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -319,9 +353,13 @@
 </head>
 <body>
 
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
     <div class="app-container">
         
-        <div id="auth-view" class="view active">
+        <div id="auth-view" class="view">
             <h1>HaiCalling</h1>
             <div id="login-form" class="auth-form form-active">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
@@ -445,18 +483,6 @@
     <div id="contact-options-modal" class="modal-overlay"><div class="modal-content"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-accent);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-accent);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
     <div id="forgot-password-modal" class="modal-overlay"><div class="modal-content"><h3>Reset Password</h3><p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p><input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address"><p id="reset-error" class="modal-error"></p><div class="modal-btn-group"><button id="send-reset-link-btn" class="modal-btn primary">Send Link</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     
-    <!-- UPDATED VERIFICATION MODAL -->
-    <div id="verify-email-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Verify Your Email</h3>
-            <p>A verification link has been sent to your email. Please check your inbox and click the link to continue. You can resend the link if you don't receive it.</p>
-            <div class="modal-btn-group">
-                <button id="resend-verify-link-btn" class="modal-btn">Resend Link</button>
-                <button id="back-to-login-btn" class="modal-btn primary">Back to Login</button>
-            </div>
-        </div>
-    </div>
-
     <div id="about-modal" class="modal-overlay"><div class="modal-content" style="text-align: left;"><h3>About HaiCalling</h3><p style="font-size: 0.9em;">Version: 1.0.0<br>A real-time chat and video calling application built with Firebase and WebRTC.</p><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
     <div id="change-password-modal" class="modal-overlay"><div class="modal-content"><h3>Change Password</h3><input type="password" id="current-password-input" class="input-field" placeholder="Current Password"><input type="password" id="new-password-input" class="input-field" placeholder="New Password"><p id="change-password-error" class="modal-error"></p><div class="modal-btn-group"><button id="update-password-btn" class="modal-btn primary">Update</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     <div id="delete-account-modal" class="modal-overlay"><div class="modal-content"><h3>Delete Account</h3><p>This action is irreversible. To confirm, please enter your password.</p><input type="password" id="delete-confirm-password-input" class="input-field" placeholder="Enter Your Password"><p id="delete-account-error" class="modal-error"></p><div class="modal-btn-group"><button id="confirm-delete-account-btn" class="modal-btn delete-btn">Delete My Account</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
@@ -486,6 +512,7 @@
         let messageListeners = {}, unreadListeners = {}, callListeners = {};
         let peerConnection, localStream, currentCallData, isSpeakerOn = false;
         
+        const loadingOverlay = document.getElementById('loading-overlay');
         const homePage = document.getElementById('home-page');
         const notificationsPage = document.getElementById('notifications-page');
         const callsPage = document.getElementById('calls-page');
@@ -496,39 +523,41 @@
         const messageToneAudio = document.getElementById('message-tone-audio');
         
         let activeView = 'auth-view';
+
+        function showLoader() {
+            if (loadingOverlay) loadingOverlay.classList.add('active');
+        }
+
+        function hideLoader() {
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+        }
+
+        // Initially show loader, hide it when auth state is confirmed.
+        showLoader();
+
         function showView(viewId) {
             document.getElementById(activeView)?.classList.remove('active');
             document.getElementById(viewId)?.classList.add('active');
             activeView = viewId;
         }
 
-        // --- UPDATED: Auth State Logic with Verification "Purgatory" ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                // User is logged in
-                if (user.emailVerified) {
-                    // User is verified, proceed to app
-                    hideModal('verify-email-modal');
-                    db.ref(`users/${user.uid}`).once('value', snapshot => {
-                        if (snapshot.exists()) {
-                            currentUser = { uid: user.uid, ...snapshot.val() };
-                            initializeApp();
-                        } else {
-                            // Edge case: verified but no profile. Prompt to create one.
-                            showModal('user-details-modal');
-                        }
-                    });
-                } else {
-                    // User is logged in but NOT verified. Keep them on auth screen.
-                    showView('auth-view');
-                    showModal('verify-email-modal');
-                }
+                db.ref(`users/${user.uid}`).once('value', snapshot => {
+                    if (snapshot.exists()) {
+                        currentUser = { uid: user.uid, ...snapshot.val() };
+                        initializeApp();
+                    } else {
+                        showView('auth-view'); 
+                        showModal('user-details-modal');
+                    }
+                    hideLoader();
+                });
             } else {
-                // No user is logged in
                 currentUser = null;
                 cleanupApp();
-                hideModal('verify-email-modal'); // Ensure modal is hidden on logout
                 showView('auth-view');
+                hideLoader();
             }
         });
         
@@ -550,33 +579,29 @@
         
         document.getElementById('login-button').addEventListener('click', e => { 
             e.preventDefault(); 
+            showLoader();
             auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value)
                 .catch(err => {
                     authErrorLogin.textContent = err.message;
-                    // --- NEW ---: Specific check for unverified email on login attempt
-                    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                        // Standard errors
-                    } else {
-                         // Potentially an unverified user from a different session
-                         authErrorLogin.textContent = 'Please verify your email before logging in.';
-                    }
+                    hideLoader();
                 });
         });
         
         document.getElementById('signup-button').addEventListener('click', e => {
             e.preventDefault();
             authErrorSignup.textContent = '';
+            showLoader();
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
 
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    // User is created and logged in. Now show the profile creation modal.
-                    // onAuthStateChanged will NOT fire yet if it's the same session.
+                    // onAuthStateChanged will hide loader after profile is checked/created
                     showModal('user-details-modal');
                 })
                 .catch(err => {
                     authErrorSignup.textContent = err.message;
+                    hideLoader();
                 });
         });
 
@@ -585,42 +610,31 @@
             const emoji = document.getElementById('user-emoji-input').value.trim();
 
             if (name && emoji) {
+                showLoader();
                 const user = auth.currentUser;
-                if (!user) { showAlert('Error', 'User session lost. Please sign up again.'); return; }
+                if (!user) { 
+                    showAlert('Error', 'User session lost. Please sign up again.'); 
+                    hideLoader();
+                    return; 
+                }
 
                 const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
                 const newUserProfile = { name, emoji, email: user.email, userId, callStatus: 'available' };
 
                 db.ref(`users/${user.uid}`).set(newUserProfile)
-                    .then(() => user.sendEmailVerification())
                     .then(() => {
                         hideModal('user-details-modal');
-                        showModal('verify-email-modal'); // Show the modal with resend option
+                        currentUser = { uid: user.uid, ...newUserProfile };
+                        initializeApp();
+                        // initializeApp doesn't hide loader, so we do it here
+                        hideLoader();
                     })
-                    .catch(err => showAlert('An Error Occurred', err.message));
-            } else {
-                showAlert('Profile Incomplete', 'Please provide a name and an emoji.');
-            }
-        });
-        
-        // --- NEW ---: "Back to Login" button signs the user out
-        document.getElementById('back-to-login-btn').addEventListener('click', () => {
-            auth.signOut(); // This will trigger onAuthStateChanged to show the login form
-        });
-
-        // --- NEW ---: "Resend Link" button functionality
-        document.getElementById('resend-verify-link-btn').addEventListener('click', () => {
-            const user = auth.currentUser;
-            if (user) {
-                user.sendEmailVerification()
-                    .then(() => {
-                        showAlert('Link Sent', 'A new verification link has been sent to your email.');
-                    })
-                    .catch(error => {
-                        showAlert('Error', error.message);
+                    .catch(err => {
+                        showAlert('An Error Occurred', err.message);
+                        hideLoader();
                     });
             } else {
-                showAlert('Error', 'No user is currently signed in.');
+                showAlert('Profile Incomplete', 'Please provide a name and an emoji.');
             }
         });
 
@@ -631,13 +645,16 @@
             const email = emailInput.value.trim();
             errorP.textContent = '';
             if (!email) { errorP.textContent = 'Please enter your email address.'; return; }
+            
+            showLoader();
             auth.sendPasswordResetEmail(email)
                 .then(() => {
                     hideModal('forgot-password-modal');
                     showAlert('Check Your Inbox', 'A password reset link has been sent to your email.');
                     emailInput.value = '';
                 })
-                .catch((error) => { errorP.textContent = error.message; });
+                .catch((error) => { errorP.textContent = error.message; })
+                .finally(() => hideLoader());
         });
 
         function initializeApp() {
@@ -727,17 +744,29 @@
             const friendId = document.getElementById('friend-id-input').value.trim();
             const resultDiv = document.getElementById('friend-search-result');
             if (!friendId) return;
+            showLoader();
             db.ref('users').orderByChild('userId').equalTo(friendId).once('value', snapshot => {
+                hideLoader();
                 if (snapshot.exists()) {
                     const friendUid = Object.keys(snapshot.val())[0];
                     const friendData = snapshot.val()[friendUid];
                     if (friendUid === currentUser.uid) { resultDiv.innerHTML = '<p>You cannot add yourself.</p>'; return; }
                     resultDiv.innerHTML = `<div class="list-item"><div class="list-item-emoji">${friendData.emoji}</div><div class="list-item-details"><div class="list-item-name">${friendData.name}</div></div><button class="action-btn" id="send-request-btn">Send Request</button></div>`;
+                    
                     document.getElementById('send-request-btn').onclick = () => {
-                        db.ref(`requests/${friendUid}/${currentUser.uid}`).set({ from: currentUser.uid, name: currentUser.name, emoji: currentUser.emoji, timestamp: firebase.database.ServerValue.TIMESTAMP });
-                        db.ref(`notifications/${friendUid}`).push().set({ type: 'friend_request', from: currentUser.uid, name: currentUser.name, read: false });
-                        resultDiv.innerHTML = '<p>Friend request sent!</p>';
+                        showLoader();
+                        const friendRequestData = { from: currentUser.uid, name: currentUser.name, emoji: currentUser.emoji, timestamp: firebase.database.ServerValue.TIMESTAMP };
+                        const notificationData = { type: 'friend_request', from: currentUser.uid, name: currentUser.name, read: false };
+                        const updates = {};
+                        updates[`/requests/${friendUid}/${currentUser.uid}`] = friendRequestData;
+                        updates[`/notifications/${friendUid}/${db.ref().push().key}`] = notificationData;
+
+                        db.ref().update(updates)
+                            .then(() => { resultDiv.innerHTML = '<p>Friend request sent!</p>'; })
+                            .catch((error) => { showAlert('Error', `Failed to send request: ${error.message}`); })
+                            .finally(() => hideLoader());
                     };
+
                 } else { resultDiv.innerHTML = '<p>User not found.</p>'; }
             });
         });
@@ -984,7 +1013,11 @@
         }));
         
         document.getElementById('menu-btn').addEventListener('click', () => showModal('menu-modal'));
-        document.getElementById('menu-logout-btn').addEventListener('click', () => { auth.signOut(); hideModal('menu-modal'); });
+        document.getElementById('menu-logout-btn').addEventListener('click', () => { 
+            showLoader();
+            auth.signOut(); 
+            hideModal('menu-modal'); 
+        });
         document.getElementById('menu-profile-btn').addEventListener('click', () => {
              document.getElementById('profile-id-display').textContent = `ID: ${currentUser.userId}`;
              document.getElementById('profile-name-input').value = currentUser.name;
@@ -1028,7 +1061,7 @@
             
             const user = auth.currentUser;
             if (!user) return;
-
+            showLoader();
             const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
 
             user.reauthenticateWithCredential(credential)
@@ -1038,10 +1071,11 @@
                 .then(() => {
                     hideModal('change-password-modal');
                     showAlert('Success', 'Password updated. Please log in again.');
-                    auth.signOut();
+                    auth.signOut(); // onAuthStateChanged will hide loader
                 })
                 .catch(error => {
                     errorP.textContent = error.message;
+                    hideLoader();
                 });
         });
 
@@ -1052,7 +1086,7 @@
 
             const user = auth.currentUser;
             if (!user) return;
-
+            showLoader();
             const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
 
             user.reauthenticateWithCredential(credential)
@@ -1063,9 +1097,11 @@
                 .then(() => {
                     hideModal('delete-account-modal');
                     showAlert('Account Deleted', 'Your account has been permanently deleted.');
+                    // onAuthStateChanged will hide loader
                 })
                 .catch(error => {
                     errorP.textContent = error.message;
+                    hideLoader();
                 });
         });
 
