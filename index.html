@@ -101,7 +101,19 @@
 
         #auth-view { justify-content: center; align-items: center; padding: 40px; text-align: center; }
         #auth-view h1 { font-size: 2.8rem; font-weight: 700; color: var(--text-color); margin-bottom: 30px; }
-        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        
+        .auth-form {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            animation: authFadeIn 0.5s ease;
+        }
+        .auth-form.form-active { display: flex; }
+        @keyframes authFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         
         .input-field {
             width: 100%;
@@ -134,7 +146,7 @@
         .auth-button:hover { background: var(--button-hover-bg); transform: scale(1.03); }
         .form-switch-link { margin-top: 20px; color: var(--text-color); text-decoration: none; cursor: pointer; font-weight: 500; }
         .form-switch-link:hover { text-decoration: underline; }
-        #auth-error, #auth-error-signup { color: #ffbaba; margin-top: 15px; min-height: 20px; font-weight: bold; }
+        #auth-error, #auth-error-signup, .modal-error { color: #ffbaba; margin-top: 10px; min-height: 20px; font-weight: bold; font-size: 0.9em; }
 
         .top-bar {
             width: 100%; padding: 10px 15px; display: flex; justify-content: space-between;
@@ -261,7 +273,7 @@
             display: flex; justify-content: center; align-items: center; cursor: pointer; color: white;
             background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);
         }
-        .end-call-btn { background-color: var(--red-accent); }
+        .end-call-btn, .delete-btn { background-color: var(--red-accent); }
         .end-call-btn svg { width: 35px; height: 35px; fill: white; transform: rotate(135deg); }
         .speaker-btn.active { background-color: var(--theme-color); }
         .speaker-btn svg { width: 30px; height: 30px; fill: white; }
@@ -302,7 +314,7 @@
             width: 100%; border-radius: 8px; transition: .2s ease;
         }
         .menu-item:hover { background-color: rgba(255,255,255,0.2); border-color: var(--glass-border); }
-        .menu-item#menu-logout-btn { color: var(--red-accent); font-weight: 600; }
+        .menu-item.danger, #menu-logout-btn { color: var(--red-accent); font-weight: 600; }
     </style>
 </head>
 <body>
@@ -311,7 +323,7 @@
         
         <div id="auth-view" class="view active">
             <h1>HaiCalling</h1>
-            <div id="login-form" class="auth-form">
+            <div id="login-form" class="auth-form form-active">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
                 <input type="password" id="login-password" class="input-field" placeholder="Password">
                 <a class="form-switch-link" id="show-forgot-btn" style="text-align: right; font-size: 0.9em; margin-top: 0; margin-bottom: 10px;">Forgot Password?</a>
@@ -319,7 +331,7 @@
                 <p id="auth-error"></p>
                 <a class="form-switch-link" id="show-signup">Don't have an account? Sign Up</a>
             </div>
-            <div id="signup-form" class="auth-form" style="display: none;">
+            <div id="signup-form" class="auth-form">
                 <input type="email" id="signup-email" class="input-field" placeholder="Email">
                 <input type="password" id="signup-password" class="input-field" placeholder="Password">
                 <button id="signup-button" class="auth-button">Sign Up</button>
@@ -412,19 +424,56 @@
     <div id="user-details-modal" class="modal-overlay"><div class="modal-content"><h3>Welcome to HaiCalling!</h3><p>Please set up your profile.</p><input type="text" id="user-name-input" class="input-field" placeholder="Your Name"><input type="text" id="user-emoji-input" class="input-field" placeholder="Your Emoji (e.g., 😊)"><div class="modal-btn-group"><button id="save-user-details-btn" class="modal-btn primary">Save</button></div></div></div>
     <div id="add-friend-modal" class="modal-overlay"><div class="modal-content"><h3>Add a Friend</h3><p>Enter your friend's HaiCalling ID (e.g., hai-xxxx).</p><input type="text" id="friend-id-input" class="input-field" placeholder="hai-xxxx"><div id="friend-search-result" style="margin-top: 15px;"></div><div class="modal-btn-group"><button id="search-friend-btn" class="modal-btn primary">Search</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     <div id="incoming-call-modal" class="modal-overlay"><div class="modal-content"><div id="incoming-call-emoji"></div><h3 id="incoming-call-name"></h3><p id="incoming-call-type"></p><div class="modal-btn-group"><button id="accept-call-btn" class="modal-btn" style="background-color: var(--green-accent);">Accept</button><button id="reject-call-btn" class="modal-btn" style="background-color: var(--red-accent);">Reject</button></div></div></div>
-    <div id="menu-modal" class="modal-overlay"><div class="modal-content"><div class="menu-list"><button class="menu-item" id="menu-profile-btn">Profile</button><button class="menu-item" id="menu-blocked-btn">Blocked Users</button><button class="menu-item" id="menu-logout-btn">Logout</button><button class="menu-item" data-close>Close Menu</button></div></div></div>
+    
+    <!-- NEW: Updated Menu Modal -->
+    <div id="menu-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="menu-list">
+                <button class="menu-item" id="menu-profile-btn">Profile</button>
+                <button class="menu-item" id="menu-blocked-btn">Blocked Users</button>
+                <button class="menu-item" id="menu-about-btn">About</button>
+                <button class="menu-item" id="menu-change-password-btn">Change Password</button>
+                <button class="menu-item danger" id="menu-delete-account-btn">Delete Account</button>
+                <button class="menu-item" id="menu-logout-btn">Logout</button>
+                <button class="menu-item" data-close style="text-align: center; margin-top: 10px;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="profile-modal" class="modal-overlay"><div class="modal-content"><h3>Your Profile</h3><p id="profile-id-display"></p><input type="text" id="profile-name-input" class="input-field"><input type="text" id="profile-emoji-input" class="input-field"><div class="modal-btn-group"><button id="save-profile-btn" class="modal-btn primary">Save</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     <div id="blocked-users-modal" class="modal-overlay"><div class="modal-content"><h3>Blocked Users</h3><div id="blocked-users-list" style="max-height: 200px; overflow-y: auto; width: 100%;"></div><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
     <div id="alert-modal" class="modal-overlay"><div class="modal-content"><h3 id="alert-title">Alert</h3><p id="alert-message"></p><div class="modal-btn-group"><button class="modal-btn primary" data-close>OK</button></div></div></div>
     <div id="contact-options-modal" class="modal-overlay"><div class="modal-content"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-accent);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-accent);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
-    <div id="forgot-password-modal" class="modal-overlay">
+    <div id="forgot-password-modal" class="modal-overlay"><div class="modal-content"><h3>Reset Password</h3><p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p><input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address"><p id="reset-error" class="modal-error"></p><div class="modal-btn-group"><button id="send-reset-link-btn" class="modal-btn primary">Send Link</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
+
+    <!-- NEW: Account Management Modals -->
+    <div id="about-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: left;">
+            <h3>About HaiCalling</h3>
+            <p style="font-size: 0.9em;">Version: 1.0.0<br>A real-time chat and video calling application built with Firebase and WebRTC.</p>
+            <div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div>
+        </div>
+    </div>
+    <div id="change-password-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3>Reset Password</h3>
-            <p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p>
-            <input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address">
-            <p id="reset-error" style="color: #ffbaba; min-height: 18px;"></p>
+            <h3>Change Password</h3>
+            <input type="password" id="current-password-input" class="input-field" placeholder="Current Password">
+            <input type="password" id="new-password-input" class="input-field" placeholder="New Password">
+            <p id="change-password-error" class="modal-error"></p>
             <div class="modal-btn-group">
-                <button id="send-reset-link-btn" class="modal-btn primary">Send Link</button>
+                <button id="update-password-btn" class="modal-btn primary">Update</button>
+                <button class="modal-btn" data-close>Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="delete-account-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Delete Account</h3>
+            <p>This action is irreversible. To confirm, please enter your password.</p>
+            <input type="password" id="delete-confirm-password-input" class="input-field" placeholder="Enter Your Password">
+            <p id="delete-account-error" class="modal-error"></p>
+            <div class="modal-btn-group">
+                <button id="confirm-delete-account-btn" class="modal-btn delete-btn">Delete My Account</button>
                 <button class="modal-btn" data-close>Cancel</button>
             </div>
         </div>
@@ -487,20 +536,25 @@
                 showView('auth-view');
             }
         });
+        
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const authErrorLogin = document.getElementById('auth-error');
+        const authErrorSignup = document.getElementById('auth-error-signup');
 
         document.getElementById('show-signup').addEventListener('click', () => { 
-            document.getElementById('login-form').style.display = 'none'; 
-            document.getElementById('signup-form').style.display = 'block';
-            document.getElementById('auth-error').textContent = ''; 
+            loginForm.classList.remove('form-active');
+            signupForm.classList.add('form-active');
+            authErrorLogin.textContent = ''; 
         });
         document.getElementById('show-login').addEventListener('click', () => { 
-            document.getElementById('signup-form').style.display = 'none'; 
-            document.getElementById('login-form').style.display = 'block'; 
-            document.getElementById('auth-error-signup').textContent = '';
+            signupForm.classList.remove('form-active');
+            loginForm.classList.add('form-active');
+            authErrorSignup.textContent = '';
         });
         
-        document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => document.getElementById('auth-error').textContent = err.message); });
-        document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => document.getElementById('auth-error-signup').textContent = err.message); });
+        document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => authErrorLogin.textContent = err.message); });
+        document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => authErrorSignup.textContent = err.message); });
         
         document.getElementById('show-forgot-btn').addEventListener('click', () => {
             showModal('forgot-password-modal');
@@ -885,8 +939,12 @@
         function showModal(modalId) { document.getElementById(modalId).classList.add('active'); }
         function hideModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
         function showAlert(title, msg) { document.getElementById('alert-title').textContent = title; document.getElementById('alert-message').textContent = msg; showModal('alert-modal'); }
-        document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => el.closest('.modal-overlay').classList.remove('active')));
+        document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => {
+            const modalId = el.closest('.modal-overlay').id;
+            hideModal(modalId);
+        }));
         
+        // --- Menu and Account Management Logic ---
         document.getElementById('menu-btn').addEventListener('click', () => showModal('menu-modal'));
         document.getElementById('menu-logout-btn').addEventListener('click', () => { auth.signOut(); hideModal('menu-modal'); });
         document.getElementById('menu-profile-btn').addEventListener('click', () => {
@@ -895,7 +953,6 @@
              document.getElementById('profile-emoji-input').value = currentUser.emoji;
              hideModal('menu-modal'); showModal('profile-modal');
         });
-
         document.getElementById('save-profile-btn').addEventListener('click', () => {
             const newName = document.getElementById('profile-name-input').value.trim();
             if(newName) { db.ref(`users/${currentUser.uid}/name`).set(newName); currentUser.name = newName; }
@@ -903,7 +960,6 @@
             if(newEmoji) { db.ref(`users/${currentUser.uid}/emoji`).set(newEmoji); currentUser.emoji = newEmoji; }
             hideModal('profile-modal');
         });
-        
         document.getElementById('menu-blocked-btn').addEventListener('click', async () => {
             hideModal('menu-modal'); const listEl = document.getElementById('blocked-users-list');
             listEl.innerHTML = 'Loading...'; showModal('blocked-users-modal');
@@ -920,8 +976,63 @@
                 });
             } else { listEl.innerHTML = '<p>No blocked users.</p>'; }
         });
-        
         document.getElementById('blocked-users-list').addEventListener('click', e => { if(e.target.dataset.unblockUid) db.ref(`blocked/${currentUser.uid}/${e.target.dataset.unblockUid}`).remove().then(()=>e.target.closest('.list-item').remove());});
+
+        // --- NEW: Event Listeners for Account Management ---
+        document.getElementById('menu-about-btn').addEventListener('click', () => { hideModal('menu-modal'); showModal('about-modal'); });
+        document.getElementById('menu-change-password-btn').addEventListener('click', () => { hideModal('menu-modal'); showModal('change-password-modal'); });
+        document.getElementById('menu-delete-account-btn').addEventListener('click', () => { hideModal('menu-modal'); showModal('delete-account-modal'); });
+
+        document.getElementById('update-password-btn').addEventListener('click', () => {
+            const currentPassword = document.getElementById('current-password-input').value;
+            const newPassword = document.getElementById('new-password-input').value;
+            const errorP = document.getElementById('change-password-error');
+            errorP.textContent = '';
+            
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+
+            user.reauthenticateWithCredential(credential)
+                .then(() => {
+                    return user.updatePassword(newPassword);
+                })
+                .then(() => {
+                    hideModal('change-password-modal');
+                    showAlert('Success', 'Password updated. Please log in again.');
+                    auth.signOut();
+                })
+                .catch(error => {
+                    errorP.textContent = error.message;
+                });
+        });
+
+        document.getElementById('confirm-delete-account-btn').addEventListener('click', () => {
+            const password = document.getElementById('delete-confirm-password-input').value;
+            const errorP = document.getElementById('delete-account-error');
+            errorP.textContent = '';
+
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+
+            user.reauthenticateWithCredential(credential)
+                .then(() => {
+                    // Also delete user data from Realtime Database
+                    db.ref(`users/${user.uid}`).remove();
+                    // You might want to remove other related data (contacts, chats, etc.) here too
+                    return user.delete();
+                })
+                .then(() => {
+                    hideModal('delete-account-modal');
+                    showAlert('Account Deleted', 'Your account has been permanently deleted.');
+                })
+                .catch(error => {
+                    errorP.textContent = error.message;
+                });
+        });
 
         function logCall(status) {
             if (!currentCallData) return;
