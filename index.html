@@ -2,47 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Essential Meta Tags for Mobile Experience -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0d0d1e">
     
     <title>HaiCalling</title>
     <link rel="icon" type="image/x-icon" href="/icon.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* --- NEW COLOR SCHEME BASED ON YOUR IMAGE --- */
         :root {
-            --primary-bg: #0d0d1e; /* Very dark blue, almost black */
-            --secondary-bg: #1a1a2e; /* Dark blue/purple for elements */
-            --accent-color: #7f00ff; /* Vibrant Purple */
-            --text-color: #08f7fe;   /* Neon Cyan/Teal */
-            --text-light: #f0f0f0;   /* Off-white */
-            --glow-color: rgba(8, 247, 254, 0.6); /* Glow effect for the neon teal */
-            --glass-bg: rgba(26, 26, 46, 0.5); /* Semi-transparent dark blue */
-            --red-badge: #e94560; /* Kept for high-visibility notifications */
+            --theme-color: #0B85FF;
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --text-color: #fff;
+            --placeholder-color: rgba(255, 255, 255, 0.7);
+            --button-bg: rgba(11, 133, 255, 0.7);
+            --button-hover-bg: rgba(11, 133, 255, 0.9);
+            --red-accent: #ff3b30;
+            --green-accent: #34c759;
         }
-
-        body.light-mode {
-            --primary-bg: #ffffff;
-            --secondary-bg: #f0f5f9;
-            --accent-color: #a368ff; /* Lighter Purple */
-            --text-color: #7f00ff;   /* Vibrant Purple as main text color */
-            --text-light: #0d0d1e;   /* Dark text for readability */
-            --glow-color: rgba(127, 0, 255, 0.5);
-            --glass-bg: rgba(240, 245, 249, 0.7);
-            --red-badge: #e94560;
-        }
-        /* --- END OF NEW COLOR SCHEME --- */
 
         * {
             margin: 0;
@@ -50,7 +36,6 @@
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            user-select: none;
         }
 
         html, body {
@@ -63,189 +48,160 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(155deg, #00d9a6 0%, #0d0d1e 50%, #7f00ff 100%);
-            background-size: 400% 400%;
-            animation: gradientAnimation 15s ease infinite;
-            color: var(--text-light);
-            transition: background 0.5s ease;
-            overscroll-behavior-y: contain;
+            background: var(--theme-color);
+            color: var(--text-color);
+            min-height: 100vh;
         }
 
-        body.light-mode {
-             background: linear-gradient(135deg, #c5fdfb, #e0c8ff);
-             background-size: 400% 400%;
-        }
-
-        @keyframes gradientAnimation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .app-container {
-            width: 100%;
-            height: 100%;
-            max-width: 450px;
-            max-height: 900px;
-            background: transparent; /* MODIFIED: Made transparent to show blobs */
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            width: 400px;
+            height: 800px;
+            max-width: 100%;
+            max-height: 100%;
+            background: var(--glass-bg);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
             overflow: hidden;
             position: relative;
             display: flex;
             flex-direction: column;
-            transition: background-color 0.5s ease;
+            animation: fadeIn 0.6s ease forwards;
         }
-        
-        /* --- ADDED: Animated Background Blobs from Portfolio --- */
-        .blob-c {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            overflow: hidden;
-            filter: blur(40px);
-            z-index: 0; /* MODIFIED: Sits behind content, but inside the container */
-        }
-
-        .blob {
-            background: #4F46E5;
-            height: 250px;
-            width: 350px;
-            border-radius: 40% 60% 60% 40% / 70% 30% 70% 30%;
-            position: absolute;
-            left: 10%;
-            top: 5%;
-            animation:-move 15s infinite alternate;
-            will-change: transform;
-        }
-        .blob.one{ top: 20vh; left: 60%; background: #4338CA; animation-duration: 12s; }
-        .blob.two{ top: 70vh; left: 15%; background: #A78BFA; animation-duration: 10s; }
-        .blob.three{ top: 50vh; left: 80%; background: #7f00ff; animation-duration: 8s; height: 150px; width: 200px;}
-        .blob.four{ top: 80vh; left: 50%; background: #00d9a6; animation-duration: 18s; }
-        .blob.five{ top: -10vh; left: 30%; background: #4F46E5; animation-duration: 20s; }
-
-        @keyframes -move {
-          from { transform: rotate(0deg) scale(1.2) skew(1deg) }
-          to { transform: rotate(350deg) scale(0.8) skew(-5deg) }
-        }
-        /* --- END OF ADDED CSS --- */
 
         .view {
             width: 100%; height: 100%; position: absolute; top: 0; left: 0;
             display: flex; flex-direction: column; opacity: 0;
-            transform: translateX(100%); transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: scale(1.05); transition: opacity 0.4s ease, transform 0.4s ease;
             pointer-events: none; 
-            background-color: transparent; /* MODIFIED: Made transparent to show blobs */
         }
-        .view.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+        .view.active { opacity: 1; transform: scale(1); pointer-events: auto; }
         
-        #auth-view { transform: translateX(0); z-index: 200; }
+        #auth-view { z-index: 200; }
         #main-app-view { z-index: 10; }
         #chat-view, .call-ui-view { z-index: 100; }
         
         .glass-ui {
-            background: var(--glass-bg); backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.18);
-            transition: background-color 0.5s ease;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
         }
-        
-        .auth-button:active, .top-bar-btn:active, .nav-btn:active, .action-btn:active, 
-        .call-control-btn:active, .modal-btn:active, .menu-item:active {
-            transform: scale(0.95); opacity: 0.8;
+        .bottom-nav.glass-ui {
+            border-top: 1px solid var(--glass-border);
+            border-bottom: none;
         }
-        input, textarea { user-select: auto; }
 
         #auth-view { justify-content: center; align-items: center; padding: 40px; text-align: center; }
-        #auth-view h1 { font-size: 2.5rem; font-weight: 700; color: var(--text-color);
-            text-shadow: 0 0 10px var(--glow-color); margin-bottom: 30px;
-        }
-        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 20px; }
-        .input-field {
-            width: 100%; padding: 15px 25px; border-radius: 50px; border: 2px solid var(--accent-color);
-            background: var(--glass-bg); /* Changed for better visibility */
-            color: var(--text-light); font-size: 1rem; outline: none; transition: all 0.3s ease;
-        }
-        .input-field::placeholder { color: var(--text-light); opacity: 0.7; }
-        .input-field:focus { border-color: var(--text-color); box-shadow: 0 0 15px var(--glow-color); }
-        .auth-button {
-            padding: 15px; border-radius: 50px; border: none; background: var(--text-color);
-            color: var(--primary-bg); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
-        }
-        .auth-button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-color); }
-        .form-switch-link { margin-top: 15px; color: var(--text-light); text-decoration: underline; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-        #auth-error, #auth-error-signup { color: var(--red-badge); margin-top: 15px; min-height: 20px; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        #auth-view h1 { font-size: 2.8rem; font-weight: 700; color: var(--text-color); margin-bottom: 30px; }
+        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 15px; }
         
-        .top-bar {
-            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between;
-            align-items: center; flex-shrink: 0; z-index: 10;
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-color);
+            font-size: 15px;
+            outline: none;
         }
-        .top-bar h2 { font-size: 1.5rem; color: var(--text-light); font-weight: 700; }
+        .input-field::placeholder { color: var(--placeholder-color); }
+        .input-field:focus { border-color: var(--text-color); }
+
+        .auth-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 8px;
+            background: var(--button-bg);
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            transition: .3s;
+        }
+        .auth-button:hover { background: var(--button-hover-bg); transform: scale(1.03); }
+        .form-switch-link { margin-top: 20px; color: var(--text-color); text-decoration: none; cursor: pointer; font-weight: 500; }
+        .form-switch-link:hover { text-decoration: underline; }
+        #auth-error, #auth-error-signup { color: #ffbaba; margin-top: 15px; min-height: 20px; font-weight: bold; }
+
+        .top-bar {
+            width: 100%; padding: 10px 15px; display: flex; justify-content: space-between;
+            align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
+        }
+        .top-bar h2 { font-size: 1.5rem; color: var(--text-color); font-weight: 600; }
         .top-bar-btn {
-            background: none; border: none; color: var(--text-light); font-size: 1.5rem; cursor: pointer;
+            background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer;
             width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
         }
-        .top-bar-btn svg { width: 24px; height: 24px; fill: var(--text-light); }
-        
+        .top-bar-btn svg { width: 24px; height: 24px; fill: var(--text-color); }
+
         .content-area { flex-grow: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
         .content-area::-webkit-scrollbar { display: none; }
         .content-page { display: none; }
         .content-page.active { display: block; }
+
         .list-item {
             display: flex; align-items: center; padding: 15px; margin-bottom: 10px;
-            background-color: var(--secondary-bg); border-radius: 15px; cursor: pointer;
-            transition: background-color 0.3s ease; position: relative;
+            background: rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s; position: relative;
+            border: 1px solid transparent;
         }
-        .list-item:hover { background-color: var(--accent-color); }
+        .list-item:hover { background: rgba(255,255,255,0.15); border-color: var(--glass-border); transform: scale(1.02); }
         .list-item-emoji { font-size: 2rem; margin-right: 15px; }
         .list-item-details { flex-grow: 1; }
-        .list-item-name { font-weight: bold; color: var(--text-light); }
-        .list-item-subtext { color: var(--text-light); opacity: 0.7; font-size: 0.9rem; }
-        .list-item-actions { display: flex; align-items: center; gap: 10px; }
-        .action-btn { padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
-        .accept-btn { background-color: #28a745; }
-        .decline-btn { background-color: var(--red-badge); }
+        .list-item-name { font-weight: 600; color: var(--text-color); }
+        .list-item-subtext { color: var(--text-color); opacity: 0.7; font-size: 0.9rem; }
+        .action-btn { 
+            padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; color: white; 
+            font-weight: 600; background: var(--button-bg);
+        }
+        .accept-btn { background-color: var(--green-accent); }
+        .decline-btn { background-color: var(--red-accent); }
         .unread-badge {
-            position: absolute; top: 10px; right: 10px; background-color: var(--red-badge);
+            position: absolute; top: 15px; right: 15px; background-color: var(--theme-color);
             color: white; border-radius: 50%; width: 22px; height: 22px;
             display: flex; justify-content: center; align-items: center;
-            font-size: 0.8rem; font-weight: bold;
+            font-size: 0.8rem; font-weight: bold; border: 2px solid #fff;
         }
-        
+
         .bottom-nav {
             width: 100%; padding: 5px 0; display: flex; justify-content: space-around;
-            align-items: center; flex-shrink: 0; z-index: 10; height: 60px;
+            align-items: center; flex-shrink: 0; z-index: 10; height: 65px;
         }
         .nav-btn {
             background: none; border: none; flex: 1; height: 100%; display: flex; justify-content: center;
             align-items: center; cursor: pointer; transition: all 0.3s ease; position: relative;
-            color: var(--text-light);
+            color: var(--text-color);
         }
-        .nav-btn svg {
-            width: 26px; height: 26px; fill: currentColor; opacity: 0.7;
-            transition: all 0.3s ease;
-        }
-        .nav-btn.active svg { color: var(--text-color); opacity: 1; transform: scale(1.1); }
+        .nav-btn svg { width: 26px; height: 26px; fill: currentColor; opacity: 0.7; transition: all 0.3s ease; }
+        .nav-btn.active svg { color: var(--text-color); opacity: 1; transform: translateY(-5px) scale(1.1); }
         .nav-badge {
-            position: absolute; top: 8px; right: calc(50% - 25px); background-color: var(--red-badge);
+            position: absolute; top: 8px; right: calc(50% - 25px); background-color: var(--red-accent);
             color: white; width: 18px; height: 18px; border-radius: 50%;
             font-size: 0.7rem; font-weight: bold; display: flex;
             align-items: center; justify-content: center;
         }
-
+        
+        #chat-view { background: rgba(0,0,0,0.1); }
         .chat-header {
-            padding: 15px 10px; display: flex; align-items: center;
-            background-color: var(--secondary-bg); flex-shrink: 0;
+            padding: 10px; display: flex; align-items: center;
+            flex-shrink: 0; height: 60px;
         }
-        .chat-header .back-btn, .call-action-btn {
-            background: none; border: none; color: var(--text-light); font-size: 1.5rem;
-            cursor: pointer; width: 44px; height: 44px; display:flex; justify-content: center; align-items: center;
-        }
-        .chat-header .back-btn { margin-right: 5px; }
-        .call-action-btn { margin-left: 5px; }
-        .chat-header svg { width: 24px; height: 24px; fill: var(--text-light); }
-        .chat-contact-name { font-weight: bold; font-size: 1.2rem; color: var(--text-light); flex-grow: 1; }
+        .chat-header .back-btn, .call-action-btn { background: none; border: none; color: var(--text-color); cursor: pointer; width: 44px; height: 44px; display:flex; justify-content: center; align-items: center; }
+        .chat-header svg { width: 24px; height: 24px; fill: var(--text-color); }
+        .chat-contact-name { font-weight: 600; font-size: 1.2rem; color: var(--text-color); flex-grow: 1; text-align: center; }
         
         #messages-container-wrapper {
             flex-grow: 1; overflow-y: auto; display: flex;
@@ -254,114 +210,111 @@
         #messages-container { display: flex; flex-direction: column-reverse; padding: 15px; }
 
         .message-bubble {
-            max-width: 75%; padding: 10px 15px; border-radius: 20px;
+            max-width: 75%; padding: 10px 15px; border-radius: 18px;
             margin-bottom: 10px; overflow-wrap: break-word; 
         }
         .message-bubble.sent {
-            background-color: var(--accent-color); color: white;
+            background-color: var(--theme-color); color: white;
             align-self: flex-end; border-bottom-right-radius: 5px;
         }
         .message-bubble.received {
-            background-color: var(--secondary-bg); color: var(--text-light);
+            background: rgba(255, 255, 255, 0.2); color: var(--text-color);
             align-self: flex-start; border-bottom-left-radius: 5px;
         }
         .message-timestamp { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; display: block; }
         
         .chat-input-area {
-            display: flex; align-items: center; padding: 8px 12px; gap: 8px;
-            background-color: var(--secondary-bg); flex-shrink: 0; border-top: 1px solid var(--accent-color);
+            display: flex; align-items: center; padding: 10px 12px; gap: 10px;
+            flex-shrink: 0; border-top: 1px solid var(--glass-border);
         }
         #message-input {
-            flex-grow: 1; height: 40px; padding: 0 20px; border-radius: 20px; 
-            border: 1px solid var(--accent-color); background: var(--primary-bg);
-            color: var(--text-light); outline: none; font-size: 1rem; user-select: text;
+            flex-grow: 1; height: 44px; padding: 0 20px; border-radius: 22px; 
+            border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1);
+            color: var(--text-color); outline: none; font-size: 1rem;
         }
         #message-input:focus { border-color: var(--text-color); }
         #send-button {
-            flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
-            border: none; background: var(--text-color); cursor: pointer;
+            flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%;
+            border: none; background: var(--theme-color); cursor: pointer;
             display: flex; align-items: center; justify-content: center; padding: 0;
         }
-        #send-button svg { width: 20px; height: 20px; fill: var(--primary-bg); }
+        #send-button svg { width: 20px; height: 20px; fill: var(--text-color); }
 
         #call-view { background-color: #000; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
         #local-video {
             position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px;
-            border: 3px solid var(--text-color); border-radius: 10px; object-fit: cover; cursor: grab;
+            border: 2px solid var(--glass-border); border-radius: 12px; object-fit: cover; cursor: grab;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         
         #audio-call-view { justify-content: center; align-items: center; text-align: center; }
-        #audio-call-view::before {
-             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-             background: transparent;
-             z-index: -1;
-        }
-
-        #audio-callee-emoji { font-size: 6rem; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #audio-callee-name { font-size: 2rem; font-weight: bold; margin-top: 15px; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #audio-call-status { font-size: 1rem; opacity: 0.8; margin-top: 10px; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #audio-callee-emoji { font-size: 6rem; }
+        #audio-callee-name { font-size: 2rem; font-weight: bold; margin-top: 15px; }
+        #audio-call-status { font-size: 1rem; opacity: 0.8; margin-top: 10px; }
 
         .call-controls {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;
         }
         .call-control-btn {
-            width: 70px; height: 70px; border-radius: 50%; border: none;
+            width: 70px; height: 70px; border-radius: 50%; border: 1px solid var(--glass-border);
             display: flex; justify-content: center; align-items: center; cursor: pointer; color: white;
-            background-color: rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px);
+            background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);
         }
-        .end-call-btn { background-color: var(--red-badge); }
+        .end-call-btn { background-color: var(--red-accent); }
         .end-call-btn svg { width: 35px; height: 35px; fill: white; transform: rotate(135deg); }
-        .speaker-btn.active { background-color: var(--accent-color); }
+        .speaker-btn.active { background-color: var(--theme-color); }
         .speaker-btn svg { width: 30px; height: 30px; fill: white; }
 
         .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7);
-            display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0;
-            pointer-events: none; transition: opacity 0.3s ease;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-overlay.active { display: flex; }
         .modal-content {
-            width: 90%; max-width: 350px; padding: 30px; border-radius: 20px;
-            text-align: center; display: flex; flex-direction: column; gap: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 30px;
+            width: 360px;
+            max-width: 95%;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            animation: fadeIn .4s ease forwards;
+            display: flex; flex-direction: column; gap: 15px;
         }
         .modal-content h3 { color: var(--text-color); font-size: 1.5rem; margin-bottom: 10px; }
-        .modal-content p { color: var(--text-light); opacity: 0.9; }
+        .modal-content p { color: var(--text-color); opacity: 0.9; }
         .modal-btn-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .modal-btn { flex: 1; padding: 12px; border-radius: 50px; border: none; color: white; font-weight: bold; cursor: pointer; }
-        .modal-btn.primary { background-color: var(--text-color); color: var(--primary-bg); }
-        .modal-btn.secondary { background-color: var(--accent-color); }
-        #incoming-call-emoji { font-size: 4rem; }
-        .menu-list { display: flex; flex-direction: column; width: 100%; }
-        .menu-item {
-            padding: 15px 20px; background-color: transparent; border: none; color: var(--text-light);
-            font-size: 1.1rem; text-align: left; cursor: pointer; width: 100%;
-            border-bottom: 1px solid var(--accent-color);
+        .modal-btn {
+            flex: 1; padding: 12px; border-radius: 8px; border: none; color: white;
+            font-weight: 600; cursor: pointer; background: var(--button-bg); border: 1px solid var(--glass-border);
         }
-        .menu-item:last-child { border-bottom: none; }
-        .menu-item:hover { background-color: var(--accent-color); }
-        .menu-item#menu-logout-btn { color: var(--red-badge); }
+        .modal-btn.primary { background-color: var(--theme-color); }
+        #incoming-call-emoji { font-size: 4rem; }
+        
+        .menu-list { display: flex; flex-direction: column; width: 100%; gap: 5px; }
+        .menu-item {
+            padding: 15px 20px; background-color: rgba(255,255,255,0.1); border: 1px solid transparent;
+            color: var(--text-color); font-size: 1.1rem; text-align: left; cursor: pointer; 
+            width: 100%; border-radius: 8px; transition: .2s ease;
+        }
+        .menu-item:hover { background-color: rgba(255,255,255,0.2); border-color: var(--glass-border); }
+        .menu-item#menu-logout-btn { color: var(--red-accent); font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-
-        <!-- ADDED: Animated Background Blobs -->
-        <div class="blob-c">
-            <div class="blob"></div>
-            <div class="blob one"></div>
-            <div class="blob two"></div>
-            <div class="blob three"></div>
-            <div class="blob four"></div>
-            <div class="blob five"></div>
-        </div>
         
         <div id="auth-view" class="view active">
             <h1>HaiCalling</h1>
             <div id="login-form" class="auth-form">
                 <input type="email" id="login-email" class="input-field" placeholder="Email">
                 <input type="password" id="login-password" class="input-field" placeholder="Password">
+                <a class="form-switch-link" id="show-forgot-btn" style="text-align: right; font-size: 0.9em; margin-top: 0; margin-bottom: 10px;">Forgot Password?</a>
                 <button id="login-button" class="auth-button">Log In</button>
                 <p id="auth-error"></p>
                 <a class="form-switch-link" id="show-signup">Don't have an account? Sign Up</a>
@@ -380,7 +333,7 @@
                 <button class="top-bar-btn" id="menu-btn">
                     <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"></path></svg>
                 </button>
-                <h2 id="main-title">HaiCalling</h2>
+                <h2 id="main-title">Chats</h2>
                 <button class="top-bar-btn" id="add-friend-btn">
                      <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"></path></svg>
                 </button>
@@ -405,7 +358,7 @@
         </div>
         
         <div id="chat-view" class="view">
-            <header class="chat-header">
+            <header class="chat-header glass-ui">
                 <button class="back-btn" id="chat-back-btn">
                     <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path></svg>
                 </button>
@@ -420,7 +373,7 @@
             <div id="messages-container-wrapper">
                  <div id="messages-container"></div>
             </div>
-            <div class="chat-input-area">
+            <div class="chat-input-area glass-ui">
                 <input type="text" id="message-input" placeholder="Type a message...">
                 <button id="send-button">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
@@ -456,14 +409,26 @@
     </div>
 
     <!-- Modals -->
-    <div id="user-details-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Welcome to HaiCalling!</h3><p>Please set up your profile.</p><input type="text" id="user-name-input" class="input-field" placeholder="Your Name"><input type="text" id="user-emoji-input" class="input-field" placeholder="Your Emoji (e.g., 😊)"><div class="modal-btn-group"><button id="save-user-details-btn" class="modal-btn primary">Save</button></div></div></div>
-    <div id="add-friend-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Add a Friend</h3><p>Enter your friend's HaiCalling ID (e.g., hai-xxxx).</p><input type="text" id="friend-id-input" class="input-field" placeholder="hai-xxxx"><div id="friend-search-result" style="margin-top: 15px;"></div><div class="modal-btn-group"><button id="search-friend-btn" class="modal-btn primary">Search</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
-    <div id="incoming-call-modal" class="modal-overlay"><div class="modal-content glass-ui"><div id="incoming-call-emoji" style="font-size: 4rem;"></div><h3 id="incoming-call-name"></h3><p id="incoming-call-type"></p><div class="modal-btn-group"><button id="accept-call-btn" class="modal-btn" style="background-color: #28a745;">Accept</button><button id="reject-call-btn" class="modal-btn" style="background-color: #dc3545;">Reject</button></div></div></div>
-    <div id="menu-modal" class="modal-overlay"><div class="modal-content glass-ui"><div class="menu-list"><button class="menu-item" id="menu-profile-btn">Profile</button><button class="menu-item" id="menu-blocked-btn">Blocked Users</button><button class="menu-item" id="menu-theme-btn">Toggle Theme</button><button class="menu-item" id="menu-logout-btn">Logout</button><button class="menu-item" data-close>Close Menu</button></div></div></div>
-    <div id="profile-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Your Profile</h3><div style="display: flex; align-items: center; justify-content: center; gap: 10px;"><p id="profile-id-display" style="margin: 0;"></p><button id="copy-id-btn" title="Copy ID" style="background: transparent; border: none; cursor: pointer; padding: 5px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--text-color)"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path></svg></button></div><input type="text" id="profile-name-input" class="input-field"><input type="text" id="profile-emoji-input" class="input-field"><div class="modal-btn-group"><button id="save-profile-btn" class="modal-btn primary">Save</button><button class="modal-btn secondary" data-close>Cancel</button></div></div></div>
-    <div id="blocked-users-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3>Blocked Users</h3><div id="blocked-users-list" style="max-height: 200px; overflow-y: auto; width: 100%;"></div><div class="modal-btn-group"><button class="modal-btn secondary" data-close>Close</button></div></div></div>
-    <div id="alert-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="alert-title">Alert</h3><p id="alert-message"></p><div class="modal-btn-group"><button class="modal-btn primary" data-close>OK</button></div></div></div>
-    <div id="contact-options-modal" class="modal-overlay"><div class="modal-content glass-ui"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-badge);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-badge);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
+    <div id="user-details-modal" class="modal-overlay"><div class="modal-content"><h3>Welcome to HaiCalling!</h3><p>Please set up your profile.</p><input type="text" id="user-name-input" class="input-field" placeholder="Your Name"><input type="text" id="user-emoji-input" class="input-field" placeholder="Your Emoji (e.g., 😊)"><div class="modal-btn-group"><button id="save-user-details-btn" class="modal-btn primary">Save</button></div></div></div>
+    <div id="add-friend-modal" class="modal-overlay"><div class="modal-content"><h3>Add a Friend</h3><p>Enter your friend's HaiCalling ID (e.g., hai-xxxx).</p><input type="text" id="friend-id-input" class="input-field" placeholder="hai-xxxx"><div id="friend-search-result" style="margin-top: 15px;"></div><div class="modal-btn-group"><button id="search-friend-btn" class="modal-btn primary">Search</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
+    <div id="incoming-call-modal" class="modal-overlay"><div class="modal-content"><div id="incoming-call-emoji"></div><h3 id="incoming-call-name"></h3><p id="incoming-call-type"></p><div class="modal-btn-group"><button id="accept-call-btn" class="modal-btn" style="background-color: var(--green-accent);">Accept</button><button id="reject-call-btn" class="modal-btn" style="background-color: var(--red-accent);">Reject</button></div></div></div>
+    <div id="menu-modal" class="modal-overlay"><div class="modal-content"><div class="menu-list"><button class="menu-item" id="menu-profile-btn">Profile</button><button class="menu-item" id="menu-blocked-btn">Blocked Users</button><button class="menu-item" id="menu-logout-btn">Logout</button><button class="menu-item" data-close>Close Menu</button></div></div></div>
+    <div id="profile-modal" class="modal-overlay"><div class="modal-content"><h3>Your Profile</h3><p id="profile-id-display"></p><input type="text" id="profile-name-input" class="input-field"><input type="text" id="profile-emoji-input" class="input-field"><div class="modal-btn-group"><button id="save-profile-btn" class="modal-btn primary">Save</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
+    <div id="blocked-users-modal" class="modal-overlay"><div class="modal-content"><h3>Blocked Users</h3><div id="blocked-users-list" style="max-height: 200px; overflow-y: auto; width: 100%;"></div><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
+    <div id="alert-modal" class="modal-overlay"><div class="modal-content"><h3 id="alert-title">Alert</h3><p id="alert-message"></p><div class="modal-btn-group"><button class="modal-btn primary" data-close>OK</button></div></div></div>
+    <div id="contact-options-modal" class="modal-overlay"><div class="modal-content"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-accent);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-accent);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
+    <div id="forgot-password-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Reset Password</h3>
+            <p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p>
+            <input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address">
+            <p id="reset-error" style="color: #ffbaba; min-height: 18px;"></p>
+            <div class="modal-btn-group">
+                <button id="send-reset-link-btn" class="modal-btn primary">Send Link</button>
+                <button class="modal-btn" data-close>Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Audio Elements -->
     <audio id="incoming-call-audio" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" loop></audio>
@@ -471,28 +436,25 @@
     
     <script>
     (() => {
-        // --- Firebase Configuration ---
         const firebaseConfig = {
-          apiKey: "AIzaSyAD2S8b5dxYV1fFYc-RMJMwV1IQ3yCRvd0",
-          authDomain: "haicalling.firebaseapp.com",
-          databaseURL: "https://haicalling-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "haicalling",
-          storageBucket: "haicalling.firebasestorage.app",
-          messagingSenderId: "379823659600",
-          appId: "1:379823659600:web:d86fb74951ce52206b4f55"
+            apiKey: "AIzaSyBF8WGFStX62SCFqhMzqcvIFI0LZTJfd30",
+            authDomain: "social-media-420.firebaseapp.com",
+            databaseURL: "https://social-media-420-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "social-media-420",
+            storageBucket: "social-media-420.firebasestorage.app",
+            messagingSenderId: "137093270524",
+            appId: "1:137093270524:web:2847379ede160b6c73c079",
+            measurementId: "G-G842MWTJKD"
         };
 
-        // --- Firebase Initialization ---
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
 
-        // --- Global App State ---
         let currentUser = null, currentChatId = null, currentChatPeer = null;
         let messageListeners = {}, unreadListeners = {}, callListeners = {};
         let peerConnection, localStream, currentCallData, isSpeakerOn = false;
         
-        // --- DOM Elements ---
         const homePage = document.getElementById('home-page');
         const notificationsPage = document.getElementById('notifications-page');
         const callsPage = document.getElementById('calls-page');
@@ -502,17 +464,13 @@
         const incomingCallAudio = document.getElementById('incoming-call-audio');
         const messageToneAudio = document.getElementById('message-tone-audio');
         
-        // --- View Management ---
         let activeView = 'auth-view';
         function showView(viewId) {
             document.getElementById(activeView)?.classList.remove('active');
             document.getElementById(viewId)?.classList.add('active');
             activeView = viewId;
         }
-        function openOverlayView(viewId) { document.getElementById(viewId).classList.add('active'); }
-        function closeOverlayView(viewId) { document.getElementById(viewId).classList.remove('active'); }
 
-        // --- Authentication Logic ---
         auth.onAuthStateChanged(user => {
             if (user) {
                 db.ref(`users/${user.uid}`).once('value', snapshot => {
@@ -530,7 +488,6 @@
             }
         });
 
-        // Listeners for switching between Login and Signup
         document.getElementById('show-signup').addEventListener('click', () => { 
             document.getElementById('login-form').style.display = 'none'; 
             document.getElementById('signup-form').style.display = 'block';
@@ -542,42 +499,54 @@
             document.getElementById('auth-error-signup').textContent = '';
         });
         
-        // Listeners for Login and Signup buttons
         document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => document.getElementById('auth-error').textContent = err.message); });
         document.getElementById('signup-button').addEventListener('click', e => { e.preventDefault(); auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value).catch(err => document.getElementById('auth-error-signup').textContent = err.message); });
         
-        // Listener to save new user details and automatically log in
+        document.getElementById('show-forgot-btn').addEventListener('click', () => {
+            showModal('forgot-password-modal');
+        });
+
+        document.getElementById('send-reset-link-btn').addEventListener('click', () => {
+            const emailInput = document.getElementById('reset-email-input');
+            const errorP = document.getElementById('reset-error');
+            const email = emailInput.value.trim();
+            errorP.textContent = '';
+
+            if (!email) {
+                errorP.textContent = 'Please enter your email address.';
+                return;
+            }
+
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    hideModal('forgot-password-modal');
+                    showAlert('Check Your Inbox', 'A password reset link has been sent to your email.');
+                    emailInput.value = '';
+                })
+                .catch((error) => {
+                    errorP.textContent = error.message;
+                });
+        });
+
+
         document.getElementById('save-user-details-btn').addEventListener('click', () => {
             const name = document.getElementById('user-name-input').value.trim();
             const emoji = document.getElementById('user-emoji-input').value.trim();
             if (name && emoji) {
                 const user = auth.currentUser;
-                if (!user) return; // Safety check
-
+                if (!user) return;
                 const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
-                const newUserProfile = { 
-                    name, 
-                    emoji, 
-                    email: user.email, 
-                    userId, 
-                    callStatus: 'available' 
-                };
-                
+                const newUserProfile = { name, emoji, email: user.email, userId, callStatus: 'available' };
                 db.ref(`users/${user.uid}`).set(newUserProfile).then(() => {
-                    // Profile saved, now set the global user and initialize the app
                     currentUser = { uid: user.uid, ...newUserProfile };
                     initializeApp();
                     hideModal('user-details-modal');
-                }).catch(err => {
-                    console.error("Error saving profile: ", err);
-                    showAlert('Profile Error', 'Could not save your profile. Please try again.');
-                });
+                }).catch(err => showAlert('Profile Error', 'Could not save your profile.'));
             } else {
                 showAlert('Profile Incomplete', 'Please provide a name and an emoji.');
             }
         });
 
-        // --- App Initialization and Cleanup ---
         function initializeApp() {
             showView('main-app-view');
             setupPresence(); 
@@ -600,7 +569,6 @@
             homePage.innerHTML = ''; notificationsPage.innerHTML = ''; callsPage.innerHTML = '';
         }
         
-        // --- Presence System ---
         function setupPresence() {
             const userStatusRef = db.ref(`/users/${currentUser.uid}/callStatus`);
             const connectedRef = db.ref('.info/connected');
@@ -611,7 +579,6 @@
             });
         }
         
-        // --- Contact and Friend System ---
         function loadContacts() {
             db.ref(`contacts/${currentUser.uid}`).on('value', snapshot => {
                 homePage.innerHTML = '';
@@ -650,7 +617,6 @@
         }
         function deleteChat(friendUid) { db.ref(`/messages/${getChatId(currentUser.uid, friendUid)}`).remove().then(() => showAlert('Chat Deleted', 'The chat history has been removed.')); }
 
-        // --- Main Navigation ---
         bottomNavBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 bottomNavBtns.forEach(b => b.classList.remove('active'));
@@ -663,19 +629,17 @@
             });
         });
 
-        // --- Add Friends and Notifications ---
         document.getElementById('add-friend-btn').addEventListener('click', () => showModal('add-friend-modal'));
         document.getElementById('search-friend-btn').addEventListener('click', () => {
             const friendId = document.getElementById('friend-id-input').value.trim();
             const resultDiv = document.getElementById('friend-search-result');
             if (!friendId) return;
-
             db.ref('users').orderByChild('userId').equalTo(friendId).once('value', snapshot => {
                 if (snapshot.exists()) {
                     const friendUid = Object.keys(snapshot.val())[0];
                     const friendData = snapshot.val()[friendUid];
                     if (friendUid === currentUser.uid) { resultDiv.innerHTML = '<p>You cannot add yourself.</p>'; return; }
-                    resultDiv.innerHTML = `<div class="list-item"><div class="list-item-emoji">${friendData.emoji}</div><div class="list-item-details"><div class="list-item-name">${friendData.name}</div></div><button class="action-btn" id="send-request-btn" style="background-color:var(--text-color);">Send Request</button></div>`;
+                    resultDiv.innerHTML = `<div class="list-item"><div class="list-item-emoji">${friendData.emoji}</div><div class="list-item-details"><div class="list-item-name">${friendData.name}</div></div><button class="action-btn" id="send-request-btn">Send Request</button></div>`;
                     document.getElementById('send-request-btn').onclick = () => {
                         db.ref(`requests/${friendUid}/${currentUser.uid}`).set({ from: currentUser.uid, name: currentUser.name, emoji: currentUser.emoji, timestamp: firebase.database.ServerValue.TIMESTAMP });
                         db.ref(`notifications/${friendUid}`).push().set({ type: 'friend_request', from: currentUser.uid, name: currentUser.name, read: false });
@@ -713,7 +677,6 @@
             }
         });
 
-        // --- Real-time Chat System ---
         function getChatId(uid1, uid2) { return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`; }
         
         function openChat(friendUid, friendData) {
@@ -721,7 +684,7 @@
             currentChatPeer = {uid: friendUid, ...friendData};
             document.getElementById('chat-contact-name').textContent = friendData.name;
             messagesContainer.innerHTML = ''; 
-            showView('chat-view'); // Changed from openOverlayView
+            showView('chat-view');
             db.ref(`unreadCounts/${currentUser.uid}/${currentChatId}`).set(0);
             loadMessages();
         }
@@ -733,7 +696,7 @@
             messagesRef.on('child_added', s => {
                 displayMessage(s.val());
                 if(s.val().senderId !== currentUser.uid && document.getElementById('chat-view').classList.contains('active')) {
-                    messageToneAudio.play().catch(e => console.log("Audio play failed", e));
+                    messageToneAudio.play().catch(e => {});
                 }
             });
         }
@@ -759,10 +722,9 @@
         document.getElementById('chat-back-btn').addEventListener('click', () => {
             if(messageListeners[currentChatId]) messageListeners[currentChatId].off();
             currentChatId = null; currentChatPeer = null; 
-            showView('main-app-view'); // Changed from closeOverlayView
+            showView('main-app-view');
         });
         
-        // --- WebRTC Calling System ---
         const servers = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
         document.getElementById('voice-call-btn').addEventListener('click', () => initiateCall(false));
         document.getElementById('video-call-btn').addEventListener('click', () => initiateCall(true));
@@ -771,19 +733,14 @@
             if (!currentChatPeer) return;
             const friendStatusSnap = await db.ref(`users/${currentChatPeer.uid}/callStatus`).once('value');
             if(friendStatusSnap.val() === 'busy'){ showAlert('User Busy', `${currentChatPeer.name} is on another call.`); return; }
-
             const callId = db.ref('calls').push().key;
             currentCallData = { callId, callerId: currentUser.uid, callerInfo: { name: currentUser.name, emoji: currentUser.emoji }, receiverId: currentChatPeer.uid, status: 'ringing', isVideo };
-            
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
             } catch (err) {
-                console.error("getUserMedia error:", err);
-                showAlert('Media Error', 'Could not access camera/microphone. Please check permissions.');
-                currentCallData = null;
-                return;
+                showAlert('Media Error', 'Could not access camera/microphone.');
+                currentCallData = null; return;
             }
-            
             if (isVideo) { showView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
             else {
                 showView('audio-call-view');
@@ -791,19 +748,15 @@
                 document.getElementById('audio-callee-name').textContent = currentChatPeer.name;
                 document.getElementById('audio-call-status').textContent = 'Calling...';
             }
-
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
             setupPeerConnection(callId, true);
-
             try {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 currentCallData.offer = { type: offer.type, sdp: offer.sdp };
                 await db.ref(`calls/${callId}`).set(currentCallData);
             } catch(err) {
-                console.error("Error creating offer:", err);
-                showAlert('Call Error', 'Failed to initiate call.');
-                await cleanupCall();
+                showAlert('Call Error', 'Failed to initiate call.'); await cleanupCall();
             }
         }
         
@@ -821,7 +774,7 @@
                     document.getElementById('incoming-call-name').textContent = `${callData.callerInfo.name} is calling...`;
                     document.getElementById('incoming-call-type').textContent = callData.isVideo ? 'Video Call' : 'Voice Call';
                     showModal('incoming-call-modal'); 
-                    incomingCallAudio.play().catch(e=>console.log("Audio play failed", e));
+                    incomingCallAudio.play().catch(e=>{});
                 }
             });
         }
@@ -829,18 +782,13 @@
         document.getElementById('accept-call-btn').addEventListener('click', async () => {
             incomingCallAudio.pause(); hideModal('incoming-call-modal');
             if (!currentCallData) return;
-
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
-            
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
             } catch(err) {
-                console.error("getUserMedia error on accept:", err);
-                showAlert('Media Error', 'Could not access camera/microphone. Please check permissions.');
-                db.ref(`calls/${currentCallData.callId}`).update({ status: 'failed' });
-                return;
+                showAlert('Media Error', 'Could not access camera/microphone.');
+                db.ref(`calls/${currentCallData.callId}`).update({ status: 'failed' }); return;
             }
-
             if (currentCallData.isVideo) { showView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
             else {
                  showView('audio-call-view');
@@ -851,18 +799,14 @@
                     document.getElementById('audio-call-status').textContent = 'Connecting...';
                  });
             }
-            
             setupPeerConnection(currentCallData.callId, false);
-            
             try {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentCallData.offer));
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
                 await db.ref(`calls/${currentCallData.callId}`).update({ status: 'answered', answer: { type: answer.type, sdp: answer.sdp } });
             } catch(err) {
-                console.error("Error accepting call:", err);
-                showAlert("Call Error", "Failed to connect the call.");
-                await cleanupCall();
+                showAlert("Call Error", "Failed to connect the call."); await cleanupCall();
             }
         });
         
@@ -870,26 +814,17 @@
              incomingCallAudio.pause(); hideModal('incoming-call-modal');
              if (!currentCallData) return;
              await db.ref(`calls/${currentCallData.callId}`).update({ status: 'rejected' });
-             logCall('rejected'); 
-             currentCallData = null;
+             logCall('rejected'); currentCallData = null;
         });
 
         function setupPeerConnection(callId, isCaller) {
             peerConnection = new RTCPeerConnection(servers);
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            
-            peerConnection.ontrack = e => {
-                document.getElementById('remote-video').srcObject = e.streams[0];
-            };
-            
+            peerConnection.ontrack = e => { document.getElementById('remote-video').srcObject = e.streams[0]; };
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
-            
             peerConnection.onconnectionstatechange = e => {
-                if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'closed' || peerConnection.connectionState === 'failed') {
-                    endCall();
-                }
+                if (['disconnected', 'closed', 'failed'].includes(peerConnection.connectionState)) endCall();
             };
-
             listenForCallUpdates(callId, isCaller);
         }
         
@@ -897,40 +832,26 @@
             const callRef = db.ref(`calls/${callId}`);
             if(callListeners[callId]) callListeners[callId].off();
             callListeners[callId] = callRef;
-
             callRef.on('value', async s => {
-                if (!s.exists()) {
-                    await cleanupCall();
-                    return;
-                }
+                if (!s.exists()) { await cleanupCall(); return; }
                 const callData = s.val();
-                
                 if ((callData.status === 'rejected' || callData.status === 'ended') && currentCallData) {
-                    logCall(callData.status);
-                    await cleanupCall();
-                    return;
+                    logCall(callData.status); await cleanupCall(); return;
                 }
-                
                 if (isCaller && callData.answer && peerConnection && !peerConnection.currentRemoteDescription) {
-                    try {
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.answer));
-                    } catch (err) { console.error("Error setting remote description:", err); }
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.answer)).catch(console.error);
                 }
-
                 if (callData.status === 'answered' && document.getElementById('audio-call-status')) {
                     document.getElementById('audio-call-status').textContent = 'Connected';
                 }
             });
-
             const peerId = isCaller ? currentCallData.receiverId : currentCallData.callerId;
             const iceCandidateRef = db.ref(`iceCandidates/${callId}/${peerId}`);
             if(callListeners[`ice_${callId}`]) callListeners[`ice_${callId}`].off();
             callListeners[`ice_${callId}`] = iceCandidateRef;
             iceCandidateRef.on('child_added', s => { 
                 if (s.exists() && peerConnection && peerConnection.currentRemoteDescription) {
-                    try {
-                         peerConnection.addIceCandidate(new RTCIceCandidate(s.val()));
-                    } catch(err) { console.error("Error adding ICE candidate:", err); }
+                    peerConnection.addIceCandidate(new RTCIceCandidate(s.val())).catch(console.error);
                 }
             });
         }
@@ -941,15 +862,12 @@
         
         async function cleanupCall() {
             if (!currentCallData && !peerConnection) return; 
-
             if (peerConnection) { peerConnection.close(); peerConnection = null; }
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-            
             if (currentCallData) {
                 const callId = currentCallData.callId;
                 if(callListeners[callId]) callListeners[callId].off();
                 if(callListeners[`ice_${callId}`]) callListeners[`ice_${callId}`].off();
-                
                 if (currentUser.uid === currentCallData.callerId) {
                      setTimeout(() => {
                         db.ref(`calls/${callId}`).remove();
@@ -957,16 +875,13 @@
                      }, 2000);
                 }
             }
-
-            showView('main-app-view'); // Changed from closeOverlayView
+            showView('main-app-view');
             document.getElementById('local-video').srcObject = null; 
             document.getElementById('remote-video').srcObject = null;
-            
             await db.ref(`users/${currentUser.uid}/callStatus`).set('available');
             currentCallData = null;
         }
         
-        // --- Modal and Menu Management ---
         function showModal(modalId) { document.getElementById(modalId).classList.add('active'); }
         function hideModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
         function showAlert(title, msg) { document.getElementById('alert-title').textContent = title; document.getElementById('alert-message').textContent = msg; showModal('alert-modal'); }
@@ -974,25 +889,11 @@
         
         document.getElementById('menu-btn').addEventListener('click', () => showModal('menu-modal'));
         document.getElementById('menu-logout-btn').addEventListener('click', () => { auth.signOut(); hideModal('menu-modal'); });
-        document.getElementById('menu-theme-btn').addEventListener('click', () => document.body.classList.toggle('light-mode'));
         document.getElementById('menu-profile-btn').addEventListener('click', () => {
              document.getElementById('profile-id-display').textContent = `ID: ${currentUser.userId}`;
              document.getElementById('profile-name-input').value = currentUser.name;
              document.getElementById('profile-emoji-input').value = currentUser.emoji;
              hideModal('menu-modal'); showModal('profile-modal');
-        });
-
-        document.getElementById('copy-id-btn').addEventListener('click', () => {
-            const profileIdText = document.getElementById('profile-id-display').textContent;
-            const profileId = profileIdText.split(': ')[1];
-            if (profileId) {
-                navigator.clipboard.writeText(profileId).then(() => {
-                    showAlert('Copied!', `Your ID (${profileId}) has been copied to the clipboard.`);
-                }).catch(err => {
-                    console.error('Failed to copy ID: ', err);
-                    showAlert('Error', 'Could not copy the ID to your clipboard.');
-                });
-            }
         });
 
         document.getElementById('save-profile-btn').addEventListener('click', () => {
@@ -1013,7 +914,7 @@
                     const userSnap = await db.ref(`users/${uid}`).once('value');
                     if(userSnap.exists()){
                         const item=document.createElement('div');item.className='list-item';
-                        item.innerHTML=`<div class="list-item-emoji">${userSnap.val().emoji}</div><div class="list-item-details"><div class="list-item-name">${userSnap.val().name}</div></div><button class="action-btn" data-unblock-uid="${uid}" style="background-color:var(--accent-color);">Unblock</button>`;
+                        item.innerHTML=`<div class="list-item-emoji">${userSnap.val().emoji}</div><div class="list-item-details"><div class="list-item-name">${userSnap.val().name}</div></div><button class="action-btn" data-unblock-uid="${uid}">Unblock</button>`;
                         listEl.appendChild(item);
                     }
                 });
@@ -1022,7 +923,6 @@
         
         document.getElementById('blocked-users-list').addEventListener('click', e => { if(e.target.dataset.unblockUid) db.ref(`blocked/${currentUser.uid}/${e.target.dataset.unblockUid}`).remove().then(()=>e.target.closest('.list-item').remove());});
 
-        // --- Call History ---
         function logCall(status) {
             if (!currentCallData) return;
             const peerId = currentCallData.callerId === currentUser.uid ? currentCallData.receiverId : currentCallData.callerId;
@@ -1044,8 +944,6 @@
             });
         }
         
-        // --- Extra UI Functionality ---
-        // Drag local video window
         const localVideo = document.getElementById('local-video');
         let isDragging=false, dragOffsetX, dragOffsetY;
         localVideo.addEventListener('pointerdown', e => { isDragging=true;localVideo.style.cursor='grabbing';dragOffsetX=e.clientX-localVideo.offsetLeft;dragOffsetY=e.clientY-localVideo.offsetTop;localVideo.setPointerCapture(e.pointerId);});
@@ -1058,15 +956,9 @@
         });
         document.addEventListener('pointerup', e => { isDragging=false;localVideo.style.cursor='grab';if(e.pointerId) localVideo.releasePointerCapture(e.pointerId);});
         
-        // Speaker button
         document.getElementById('speaker-btn').addEventListener('click', ()=>{isSpeakerOn=!isSpeakerOn;document.getElementById('speaker-btn').classList.toggle('active', isSpeakerOn);});
-
     })();
     </script>
-
-
-<script type='text/javascript' src='//pl26555628.profitableratecpm.com/24/fd/27/24fd2780561359f03116aea7ec6299f6.js'></script>
-
 
 </body>
 </html>
