@@ -445,12 +445,13 @@
     <div id="contact-options-modal" class="modal-overlay"><div class="modal-content"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-accent);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-accent);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
     <div id="forgot-password-modal" class="modal-overlay"><div class="modal-content"><h3>Reset Password</h3><p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p><input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address"><p id="reset-error" class="modal-error"></p><div class="modal-btn-group"><button id="send-reset-link-btn" class="modal-btn primary">Send Link</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     
-    <!-- NEW: Verification Modal -->
+    <!-- UPDATED VERIFICATION MODAL -->
     <div id="verify-email-modal" class="modal-overlay">
         <div class="modal-content">
             <h3>Verify Your Email</h3>
-            <p>A verification link has been sent to your email address. Please check your inbox (and spam folder) and click the link to continue.</p>
+            <p>A verification link has been sent to your email. Please check your inbox and click the link to continue. You can resend the link if you don't receive it.</p>
             <div class="modal-btn-group">
+                <button id="resend-verify-link-btn" class="modal-btn">Resend Link</button>
                 <button id="back-to-login-btn" class="modal-btn primary">Back to Login</button>
             </div>
         </div>
@@ -501,31 +502,32 @@
             activeView = viewId;
         }
 
-        // --- UPDATED: Auth State Logic with Verification Check ---
+        // --- UPDATED: Auth State Logic with Verification "Purgatory" ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Check if email is verified
-                if (!user.emailVerified) {
-                    showAlert('Verification Required', 'Please verify your email address before logging in. Check your inbox for a verification link.');
-                    auth.signOut(); // Force sign out if not verified
-                    return;
+                // User is logged in
+                if (user.emailVerified) {
+                    // User is verified, proceed to app
+                    hideModal('verify-email-modal');
+                    db.ref(`users/${user.uid}`).once('value', snapshot => {
+                        if (snapshot.exists()) {
+                            currentUser = { uid: user.uid, ...snapshot.val() };
+                            initializeApp();
+                        } else {
+                            // Edge case: verified but no profile. Prompt to create one.
+                            showModal('user-details-modal');
+                        }
+                    });
+                } else {
+                    // User is logged in but NOT verified. Keep them on auth screen.
+                    showView('auth-view');
+                    showModal('verify-email-modal');
                 }
-
-                // Email is verified, proceed to check for profile
-                db.ref(`users/${user.uid}`).once('value', snapshot => {
-                    if (snapshot.exists()) {
-                        // Profile exists, load the main app
-                        currentUser = { uid: user.uid, ...snapshot.val() };
-                        initializeApp();
-                    } else {
-                        // First time login for a verified user, show profile creation
-                        showModal('user-details-modal');
-                    }
-                });
             } else {
-                // No user logged in
+                // No user is logged in
                 currentUser = null;
                 cleanupApp();
+                hideModal('verify-email-modal'); // Ensure modal is hidden on logout
                 showView('auth-view');
             }
         });
@@ -546,31 +548,82 @@
             authErrorSignup.textContent = '';
         });
         
-        document.getElementById('login-button').addEventListener('click', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err => authErrorLogin.textContent = err.message); });
-        
-        // --- UPDATED: Sign-Up Logic with Verification Step ---
-        document.getElementById('signup-button').addEventListener('click', e => { 
+        document.getElementById('login-button').addEventListener('click', e => { 
             e.preventDefault(); 
+            auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value)
+                .catch(err => {
+                    authErrorLogin.textContent = err.message;
+                    // --- NEW ---: Specific check for unverified email on login attempt
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                        // Standard errors
+                    } else {
+                         // Potentially an unverified user from a different session
+                         authErrorLogin.textContent = 'Please verify your email before logging in.';
+                    }
+                });
+        });
+        
+        document.getElementById('signup-button').addEventListener('click', e => {
+            e.preventDefault();
+            authErrorSignup.textContent = '';
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
 
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    const user = userCredential.user;
-                    // Send verification email
-                    return user.sendEmailVerification();
-                })
-                .then(() => {
-                    // Sign out the user immediately so they have to log in after verifying
-                    auth.signOut();
-                    // Show the verification modal
-                    showModal('verify-email-modal');
+                    // User is created and logged in. Now show the profile creation modal.
+                    // onAuthStateChanged will NOT fire yet if it's the same session.
+                    showModal('user-details-modal');
                 })
                 .catch(err => {
                     authErrorSignup.textContent = err.message;
                 });
         });
+
+        document.getElementById('save-user-details-btn').addEventListener('click', () => {
+            const name = document.getElementById('user-name-input').value.trim();
+            const emoji = document.getElementById('user-emoji-input').value.trim();
+
+            if (name && emoji) {
+                const user = auth.currentUser;
+                if (!user) { showAlert('Error', 'User session lost. Please sign up again.'); return; }
+
+                const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
+                const newUserProfile = { name, emoji, email: user.email, userId, callStatus: 'available' };
+
+                db.ref(`users/${user.uid}`).set(newUserProfile)
+                    .then(() => user.sendEmailVerification())
+                    .then(() => {
+                        hideModal('user-details-modal');
+                        showModal('verify-email-modal'); // Show the modal with resend option
+                    })
+                    .catch(err => showAlert('An Error Occurred', err.message));
+            } else {
+                showAlert('Profile Incomplete', 'Please provide a name and an emoji.');
+            }
+        });
         
+        // --- NEW ---: "Back to Login" button signs the user out
+        document.getElementById('back-to-login-btn').addEventListener('click', () => {
+            auth.signOut(); // This will trigger onAuthStateChanged to show the login form
+        });
+
+        // --- NEW ---: "Resend Link" button functionality
+        document.getElementById('resend-verify-link-btn').addEventListener('click', () => {
+            const user = auth.currentUser;
+            if (user) {
+                user.sendEmailVerification()
+                    .then(() => {
+                        showAlert('Link Sent', 'A new verification link has been sent to your email.');
+                    })
+                    .catch(error => {
+                        showAlert('Error', error.message);
+                    });
+            } else {
+                showAlert('Error', 'No user is currently signed in.');
+            }
+        });
+
         document.getElementById('show-forgot-btn').addEventListener('click', () => showModal('forgot-password-modal'));
         document.getElementById('send-reset-link-btn').addEventListener('click', () => {
             const emailInput = document.getElementById('reset-email-input');
@@ -585,29 +638,6 @@
                     emailInput.value = '';
                 })
                 .catch((error) => { errorP.textContent = error.message; });
-        });
-        document.getElementById('back-to-login-btn').addEventListener('click', () => {
-            hideModal('verify-email-modal');
-            signupForm.classList.remove('form-active');
-            loginForm.classList.add('form-active');
-        });
-
-        document.getElementById('save-user-details-btn').addEventListener('click', () => {
-            const name = document.getElementById('user-name-input').value.trim();
-            const emoji = document.getElementById('user-emoji-input').value.trim();
-            if (name && emoji) {
-                const user = auth.currentUser;
-                if (!user) return; // Should not happen if modal is shown correctly
-                const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
-                const newUserProfile = { name, emoji, email: user.email, userId, callStatus: 'available' };
-                db.ref(`users/${user.uid}`).set(newUserProfile).then(() => {
-                    currentUser = { uid: user.uid, ...newUserProfile };
-                    initializeApp();
-                    hideModal('user-details-modal');
-                }).catch(err => showAlert('Profile Error', 'Could not save your profile.'));
-            } else {
-                showAlert('Profile Incomplete', 'Please provide a name and an emoji.');
-            }
         });
 
         function initializeApp() {
