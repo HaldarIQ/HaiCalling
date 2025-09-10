@@ -247,7 +247,9 @@
         }
         .chat-header .back-btn, .call-action-btn { background: none; border: none; color: var(--text-color); cursor: pointer; width: 44px; height: 44px; display:flex; justify-content: center; align-items: center; }
         .chat-header svg { width: 24px; height: 24px; fill: var(--text-color); }
-        .chat-contact-name { font-weight: 600; font-size: 1.2rem; color: var(--text-color); flex-grow: 1; text-align: center; }
+        .chat-contact-details { flex-grow: 1; text-align: center; }
+        .chat-contact-name { font-weight: 600; font-size: 1.2rem; color: var(--text-color); }
+        .chat-contact-status { font-size: 0.8rem; color: var(--text-color); opacity: 0.8; height: 16px; }
         
         #messages-container-wrapper {
             flex-grow: 1; overflow-y: auto; display: flex;
@@ -412,7 +414,10 @@
                 <button class="back-btn" id="chat-back-btn">
                     <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path></svg>
                 </button>
-                <span id="chat-contact-name" class="chat-contact-name">Contact Name</span>
+                <div class="chat-contact-details">
+                    <div id="chat-contact-name" class="chat-contact-name">Contact Name</div>
+                    <div id="chat-contact-status" class="chat-contact-status"></div>
+                </div>
                 <button class="call-action-btn" id="voice-call-btn">
                      <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="currentColor"></path></svg>
                 </button>
@@ -509,9 +514,10 @@
         const db = firebase.database();
 
         let currentUser = null, currentChatId = null, currentChatPeer = null;
-        let messageListeners = {}, unreadListeners = {}, callListeners = {};
+        let messageListeners = {}, unreadListeners = {}, callListeners = {}, presenceListeners = {}, typingIndicatorListener = null;
         let peerConnection, localStream, currentCallData, isSpeakerOn = false;
-        
+        let typingTimeout = null;
+
         const loadingOverlay = document.getElementById('loading-overlay');
         const homePage = document.getElementById('home-page');
         const notificationsPage = document.getElementById('notifications-page');
@@ -524,15 +530,9 @@
         
         let activeView = 'auth-view';
 
-        function showLoader() {
-            if (loadingOverlay) loadingOverlay.classList.add('active');
-        }
+        function showLoader() { if (loadingOverlay) loadingOverlay.classList.add('active'); }
+        function hideLoader() { if (loadingOverlay) loadingOverlay.classList.remove('active'); }
 
-        function hideLoader() {
-            if (loadingOverlay) loadingOverlay.classList.remove('active');
-        }
-
-        // Initially show loader, hide it when auth state is confirmed.
         showLoader();
 
         function showView(viewId) {
@@ -596,7 +596,6 @@
 
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    // onAuthStateChanged will hide loader after profile is checked/created
                     showModal('user-details-modal');
                 })
                 .catch(err => {
@@ -619,14 +618,13 @@
                 }
 
                 const userId = `hai-${Math.random().toString(36).substr(2, 4)}`;
-                const newUserProfile = { name, emoji, email: user.email, userId, callStatus: 'available' };
+                const newUserProfile = { name, emoji, email: user.email, userId, callStatus: 'available', isOnline: true, lastSeen: firebase.database.ServerValue.TIMESTAMP };
 
                 db.ref(`users/${user.uid}`).set(newUserProfile)
                     .then(() => {
                         hideModal('user-details-modal');
                         currentUser = { uid: user.uid, ...newUserProfile };
                         initializeApp();
-                        // initializeApp doesn't hide loader, so we do it here
                         hideLoader();
                     })
                     .catch(err => {
@@ -673,18 +671,22 @@
                 db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid).off();
                 Object.values(messageListeners).forEach(ref => ref.off());
                 Object.values(unreadListeners).forEach(ref => ref.off());
+                Object.values(presenceListeners).forEach(ref => ref.off());
+                if(typingIndicatorListener) typingIndicatorListener.off();
                 Object.keys(callListeners).forEach(key => callListeners[key].off());
-                messageListeners = {}; unreadListeners = {}; callListeners = {};
+                messageListeners = {}; unreadListeners = {}; callListeners = {}; presenceListeners = {}; typingIndicatorListener = null;
             }
             homePage.innerHTML = ''; notificationsPage.innerHTML = ''; callsPage.innerHTML = '';
         }
         
         function setupPresence() {
-            const userStatusRef = db.ref(`/users/${currentUser.uid}/callStatus`);
+            const userStatusRef = db.ref(`/users/${currentUser.uid}`);
             const connectedRef = db.ref('.info/connected');
             connectedRef.on('value', snap => {
                 if (snap.val() === true) {
-                    userStatusRef.onDisconnect().set('available').then(() => userStatusRef.set('available'));
+                    const presenceData = { isOnline: true, lastSeen: firebase.database.ServerValue.TIMESTAMP, callStatus: 'available' };
+                    userStatusRef.onDisconnect().update({ isOnline: false, lastSeen: firebase.database.ServerValue.TIMESTAMP, callStatus: 'available' })
+                        .then(() => userStatusRef.update(presenceData));
                 }
             });
         }
@@ -698,13 +700,39 @@
         }
         
         function displayContact(friendUid, friendData) {
-            const item = document.createElement('div'); item.className = 'list-item'; item.dataset.uid = friendUid;
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.dataset.uid = friendUid;
             const chatId = getChatId(currentUser.uid, friendUid);
-            item.innerHTML = `<div class="list-item-emoji">${friendData.emoji}</div><div class="list-item-details"><div class="list-item-name">${friendData.name}</div><div class="list-item-subtext">${friendData.userId}</div></div><div class="unread-badge" id="unread-${chatId}" style="display:none;"></div>`;
+            const initialStatusText = formatLastSeen(friendData);
+
+            item.innerHTML = `
+                <div class="list-item-emoji">${friendData.emoji}</div>
+                <div class="list-item-details">
+                    <div class="list-item-name">${friendData.name}</div>
+                    <div class="list-item-subtext" id="status-${friendUid}">
+                        ${initialStatusText}
+                    </div>
+                </div>
+                <div class="unread-badge" id="unread-${chatId}" style="display:none;"></div>`;
+            
             item.addEventListener('click', () => openChat(friendUid, friendData));
             item.addEventListener('contextmenu', e => { e.preventDefault(); openContactOptions(friendUid, friendData); });
             homePage.appendChild(item);
-            
+
+            if (presenceListeners[friendUid]) presenceListeners[friendUid].off();
+            const friendStatusRef = db.ref(`users/${friendUid}`);
+            presenceListeners[friendUid] = friendStatusRef;
+            friendStatusRef.on('value', snap => {
+                const statusData = snap.val();
+                if (statusData) {
+                    const statusElem = document.getElementById(`status-${friendUid}`);
+                    if (statusElem) {
+                        statusElem.textContent = formatLastSeen(statusData);
+                    }
+                }
+            });
+
             if(unreadListeners[chatId]) unreadListeners[chatId].off();
             const unreadRef = db.ref(`unreadCounts/${currentUser.uid}/${chatId}`);
             unreadListeners[chatId] = unreadRef;
@@ -712,6 +740,22 @@
                 const badge = document.getElementById(`unread-${chatId}`);
                 if (badge) { badge.textContent = snap.val(); badge.style.display = snap.val() > 0 ? 'flex' : 'none'; }
             });
+        }
+
+
+        function formatLastSeen(userData) {
+            if (userData.isOnline) return 'Online';
+            if (!userData.lastSeen) return '';
+            const now = new Date();
+            const lastSeenDate = new Date(userData.lastSeen);
+            const diffSeconds = Math.round((now - lastSeenDate) / 1000);
+            if (diffSeconds < 60) return 'last seen just now';
+            const diffMinutes = Math.round(diffSeconds / 60);
+            if (diffMinutes < 60) return `last seen ${diffMinutes} min ago`;
+            const diffHours = Math.round(diffMinutes / 60);
+            if (diffHours < 24) return `last seen ${diffHours} hr ago`;
+            if (diffHours < 48) return 'last seen yesterday';
+            return `last seen on ${lastSeenDate.toLocaleDateString()}`;
         }
         
         function openContactOptions(friendUid, friendData) {
@@ -733,6 +777,11 @@
                 btn.classList.add('active');
                 document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
                 document.getElementById(btn.dataset.page).classList.add('active');
+                document.getElementById('main-title').textContent = {
+                    'home-page': 'Chats',
+                    'notifications-page': 'Notifications',
+                    'calls-page': 'Call Log'
+                }[btn.dataset.page];
                 if (btn.dataset.page === 'notifications-page') {
                     db.ref(`notifications/${currentUser.uid}`).once('value', s => s.forEach(c => { if (!c.val().read) c.ref.child('read').set(true); }));
                 }
@@ -766,7 +815,6 @@
                             .catch((error) => { showAlert('Error', `Failed to send request: ${error.message}`); })
                             .finally(() => hideLoader());
                     };
-
                 } else { resultDiv.innerHTML = '<p>User not found.</p>'; }
             });
         });
@@ -808,7 +856,54 @@
             messagesContainer.innerHTML = ''; 
             showView('chat-view');
             db.ref(`unreadCounts/${currentUser.uid}/${currentChatId}`).set(0);
+
+            const friendStatusRef = db.ref(`users/${friendUid}`);
+            presenceListeners[friendUid] = friendStatusRef;
+            friendStatusRef.on('value', snap => {
+                const statusData = snap.val();
+                if (statusData && currentChatPeer && currentChatPeer.uid === friendUid) {
+                    const statusElem = document.getElementById('chat-contact-status');
+                    if (statusElem.textContent !== 'typing...') {
+                         statusElem.textContent = formatLastSeen(statusData);
+                    }
+                }
+            });
+            listenForTyping();
             loadMessages();
+        }
+        
+        function listenForTyping() {
+            if (typingIndicatorListener) typingIndicatorListener.off();
+            const typingRef = db.ref(`typingIndicators/${currentChatId}/${currentChatPeer.uid}`);
+            typingIndicatorListener = typingRef;
+            typingRef.on('value', snap => {
+                const isTyping = snap.val();
+                const statusElem = document.getElementById('chat-contact-status');
+                if (!statusElem) return;
+
+                if (isTyping) {
+                    statusElem.textContent = 'typing...';
+                } else {
+                     db.ref(`users/${currentChatPeer.uid}`).once('value', userSnap => {
+                         if(userSnap.exists()){
+                            statusElem.textContent = formatLastSeen(userSnap.val());
+                         }
+                     });
+                }
+            });
+        }
+
+        function updateUserTypingStatus(isTyping) {
+            if (!currentChatId) return;
+            const typingRef = db.ref(`typingIndicators/${currentChatId}/${currentUser.uid}`);
+            if (isTyping) {
+                typingRef.set(true);
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => updateUserTypingStatus(false), 3000);
+            } else {
+                clearTimeout(typingTimeout);
+                typingRef.remove();
+            }
         }
 
         function loadMessages() {
@@ -837,12 +932,19 @@
                 db.ref(`messages/${currentChatId}`).push({ text, senderId: currentUser.uid, timestamp: firebase.database.ServerValue.TIMESTAMP });
                 db.ref(`unreadCounts/${currentChatPeer.uid}/${currentChatId}`).transaction(c=>(c||0)+1);
                 input.value = '';
+                updateUserTypingStatus(false);
             }
         }
         document.getElementById('send-button').addEventListener('click', sendMessage);
-        document.getElementById('message-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+        document.getElementById('message-input').addEventListener('keypress', e => { 
+            if (e.key === 'Enter') sendMessage();
+            else updateUserTypingStatus(true);
+        });
+
         document.getElementById('chat-back-btn').addEventListener('click', () => {
+            updateUserTypingStatus(false);
             if(messageListeners[currentChatId]) messageListeners[currentChatId].off();
+            if(typingIndicatorListener) typingIndicatorListener.off();
             currentChatId = null; currentChatPeer = null; 
             showView('main-app-view');
         });
@@ -859,10 +961,7 @@
             currentCallData = { callId, callerId: currentUser.uid, callerInfo: { name: currentUser.name, emoji: currentUser.emoji }, receiverId: currentChatPeer.uid, status: 'ringing', isVideo };
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            } catch (err) {
-                showAlert('Media Error', 'Could not access camera/microphone.');
-                currentCallData = null; return;
-            }
+            } catch (err) { showAlert('Media Error', 'Could not access camera/microphone.'); currentCallData = null; return; }
             if (isVideo) { showView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
             else {
                 showView('audio-call-view');
@@ -877,9 +976,7 @@
                 await peerConnection.setLocalDescription(offer);
                 currentCallData.offer = { type: offer.type, sdp: offer.sdp };
                 await db.ref(`calls/${callId}`).set(currentCallData);
-            } catch(err) {
-                showAlert('Call Error', 'Failed to initiate call.'); await cleanupCall();
-            }
+            } catch(err) { showAlert('Call Error', 'Failed to initiate call.'); await cleanupCall(); }
         }
         
         function listenForCalls() {
@@ -907,10 +1004,7 @@
             await db.ref(`users/${currentUser.uid}/callStatus`).set('busy');
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: currentCallData.isVideo, audio: true });
-            } catch(err) {
-                showAlert('Media Error', 'Could not access camera/microphone.');
-                db.ref(`calls/${currentCallData.callId}`).update({ status: 'failed' }); return;
-            }
+            } catch(err) { showAlert('Media Error', 'Could not access camera/microphone.'); db.ref(`calls/${currentCallData.callId}`).update({ status: 'failed' }); return; }
             if (currentCallData.isVideo) { showView('call-view'); document.getElementById('local-video').srcObject = localStream; } 
             else {
                  showView('audio-call-view');
@@ -927,9 +1021,7 @@
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
                 await db.ref(`calls/${currentCallData.callId}`).update({ status: 'answered', answer: { type: answer.type, sdp: answer.sdp } });
-            } catch(err) {
-                showAlert("Call Error", "Failed to connect the call."); await cleanupCall();
-            }
+            } catch(err) { showAlert("Call Error", "Failed to connect the call."); await cleanupCall(); }
         });
         
         document.getElementById('reject-call-btn').addEventListener('click', async () => {
@@ -944,9 +1036,7 @@
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
             peerConnection.ontrack = e => { document.getElementById('remote-video').srcObject = e.streams[0]; };
             peerConnection.onicecandidate = e => { if (e.candidate) db.ref(`iceCandidates/${callId}/${currentUser.uid}`).push(e.candidate.toJSON()); };
-            peerConnection.onconnectionstatechange = e => {
-                if (['disconnected', 'closed', 'failed'].includes(peerConnection.connectionState)) endCall();
-            };
+            peerConnection.onconnectionstatechange = e => { if (['disconnected', 'closed', 'failed'].includes(peerConnection.connectionState)) endCall(); };
             listenForCallUpdates(callId, isCaller);
         }
         
@@ -1015,7 +1105,8 @@
         document.getElementById('menu-btn').addEventListener('click', () => showModal('menu-modal'));
         document.getElementById('menu-logout-btn').addEventListener('click', () => { 
             showLoader();
-            auth.signOut(); 
+            db.ref(`users/${currentUser.uid}`).update({ isOnline: false, lastSeen: firebase.database.ServerValue.TIMESTAMP })
+              .then(() => auth.signOut());
             hideModal('menu-modal'); 
         });
         document.getElementById('menu-profile-btn').addEventListener('click', () => {
@@ -1058,37 +1149,29 @@
             const newPassword = document.getElementById('new-password-input').value;
             const errorP = document.getElementById('change-password-error');
             errorP.textContent = '';
-            
             const user = auth.currentUser;
             if (!user) return;
             showLoader();
             const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
 
             user.reauthenticateWithCredential(credential)
-                .then(() => {
-                    return user.updatePassword(newPassword);
-                })
+                .then(() => user.updatePassword(newPassword))
                 .then(() => {
                     hideModal('change-password-modal');
                     showAlert('Success', 'Password updated. Please log in again.');
-                    auth.signOut(); // onAuthStateChanged will hide loader
+                    auth.signOut();
                 })
-                .catch(error => {
-                    errorP.textContent = error.message;
-                    hideLoader();
-                });
+                .catch(error => { errorP.textContent = error.message; hideLoader(); });
         });
 
         document.getElementById('confirm-delete-account-btn').addEventListener('click', () => {
             const password = document.getElementById('delete-confirm-password-input').value;
             const errorP = document.getElementById('delete-account-error');
             errorP.textContent = '';
-
             const user = auth.currentUser;
             if (!user) return;
             showLoader();
             const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
-
             user.reauthenticateWithCredential(credential)
                 .then(() => {
                     db.ref(`users/${user.uid}`).remove();
@@ -1097,12 +1180,8 @@
                 .then(() => {
                     hideModal('delete-account-modal');
                     showAlert('Account Deleted', 'Your account has been permanently deleted.');
-                    // onAuthStateChanged will hide loader
                 })
-                .catch(error => {
-                    errorP.textContent = error.message;
-                    hideLoader();
-                });
+                .catch(error => { errorP.textContent = error.message; hideLoader(); });
         });
 
         function logCall(status) {
