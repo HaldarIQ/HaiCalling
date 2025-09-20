@@ -289,14 +289,14 @@
         .chat-action-btn svg {
             width: 24px; height: 24px; fill: currentColor;
         }
-        .download-btn {
-            margin-top: 10px;
-            background-color: var(--button-bg);
-            color: var(--theme-color);
-        }
-        .download-btn:hover {
-            background-color: var(--button-hover-bg);
-        }
+
+        /* WebRTC File Transfer Styles */
+        .file-transfer-container { padding: 8px; }
+        .file-info { font-weight: bold; margin-bottom: 8px; }
+        .file-actions { display: flex; gap: 10px; margin-top: 8px; }
+        .progress-bar-container { width: 100%; background-color: rgba(0,0,0,0.3); border-radius: 5px; overflow: hidden; height: 8px; margin-top: 5px; }
+        .progress-bar { width: 0%; height: 100%; background-color: var(--theme-color); transition: width 0.2s ease; }
+        .file-status { font-size: 0.8em; margin-top: 4px; opacity: 0.9; }
 
         #call-view, #audio-call-view { background-color: #000; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
@@ -502,7 +502,7 @@
     <div id="contact-options-modal" class="modal-overlay"><div class="modal-content"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-accent);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-accent);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
     <div id="forgot-password-modal" class="modal-overlay"><div class="modal-content"><h3>Reset Password</h3><p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p><input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address"><p id="reset-error" class="modal-error"></p><div class="modal-btn-group"><button id="send-reset-link-btn" class="modal-btn primary">Send Link</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     
-    <div id="about-modal" class="modal-overlay"><div class="modal-content" style="text-align: left;"><h3>About HaiCalling</h3><p style="font-size: 0.9em;">Version: 3.0.0 (Futurestick)<br>Real-time communication platform with chat, WebRTC calling, and file sharing. UI/UX by Futurestick Technology.</p><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
+    <div id="about-modal" class="modal-overlay"><div class="modal-content" style="text-align: left;"><h3>About HaiCalling</h3><p style="font-size: 0.9em;">Version: 4.0.0 (Futurestick)<br>P2P file sharing powered by WebRTC. UI/UX by Futurestick Technology.</p><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
     <div id="change-password-modal" class="modal-overlay"><div class="modal-content"><h3>Change Password</h3><input type="password" id="current-password-input" class="input-field" placeholder="Current Password"><input type="password" id="new-password-input" class="input-field" placeholder="New Password"><p id="change-password-error" class="modal-error"></p><div class="modal-btn-group"><button id="update-password-btn" class="modal-btn primary">Update</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     <div id="delete-account-modal" class="modal-overlay"><div class="modal-content"><h3>Delete Account</h3><p>This action is irreversible. To confirm, please enter your password.</p><input type="password" id="delete-confirm-password-input" class="input-field" placeholder="Enter Your Password"><p id="delete-account-error" class="modal-error"></p><div class="modal-btn-group"><button id="confirm-delete-account-btn" class="modal-btn delete-btn">Delete My Account</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
 
@@ -520,22 +520,32 @@
             authDomain: "social-media-420.firebaseapp.com",
             databaseURL: "https://social-media-420-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "social-media-420",
-            storageBucket: "social-media-420.appspot.com",
+            storageBucket: "social-media-420.firebasestorage.app",
             messagingSenderId: "137093270524",
             appId: "1:137093270524:web:2847379ede160b6c73c079",
             measurementId: "G-G842MWTJKD"
         };
         // =================================================================================
 
+        // Quick check if config is still placeholder
+        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+            document.body.innerHTML = `<div style="padding: 40px; text-align: center; font-size: 1.2em; color: white; background-color: #0a192f; height: 100vh; display: flex; align-items: center; justify-content: center;">Please update the firebaseConfig object in the script tag with your own Firebase project credentials.</div>`;
+            return;
+        }
+
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
-        const storage = firebase.storage();
 
         let currentUser = null, currentChatId = null, currentChatPeer = null;
         let messageListeners = {}, unreadListeners = {}, callListeners = {}, presenceListeners = {}, typingIndicatorListener = null;
         let peerConnection, localStream, currentCallData, isSpeakerOn = false;
         let typingTimeout = null;
+        
+        // --- WebRTC Data Transfer Globals ---
+        let fileDataConnections = {}; // Stores peer connections for file transfers
+        let fileToSend = null; // Holds the file object for the sender
+        const CHUNK_SIZE = 16384; // 16KB chunk size for file transfer
 
         const loadingOverlay = document.getElementById('loading-overlay');
         const homePage = document.getElementById('home-page');
@@ -688,6 +698,7 @@
                 db.ref(`contacts/${currentUser.uid}`).off();
                 db.ref(`notifications/${currentUser.uid}`).off();
                 db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid).off();
+                db.ref('fileTransfers').off();
                 Object.values(messageListeners).forEach(ref => ref.off());
                 Object.values(unreadListeners).forEach(ref => ref.off());
                 Object.values(presenceListeners).forEach(ref => ref.off());
@@ -973,23 +984,22 @@
             if (messageListeners[currentChatId]) messageListeners[currentChatId].off();
             messageListeners[currentChatId] = messagesRef;
             messagesRef.on('child_added', s => {
-                displayMessage(s.val());
+                displayMessage(s.key, s.val());
                 if(s.val().senderId !== currentUser.uid && document.getElementById('chat-view').classList.contains('active')) {
                     messageToneAudio.play().catch(e => {});
                 }
             });
         }
         
-        function displayMessage(msg) {
+        function displayMessage(msgId, msg) {
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+            bubble.dataset.messageId = msgId;
 
-            if (msg.type === 'file') {
-                if (msg.senderId === currentUser.uid) {
-                    bubble.innerHTML = `File Sent: <strong>${msg.fileName}</strong><div class="message-timestamp">Code: ${msg.shortCode}</div>`;
-                } else {
-                    bubble.innerHTML = `File Received: <strong>${msg.fileName}</strong><br><button class="action-btn download-btn" data-short-code="${msg.shortCode}">Download</button>`;
-                }
+            if (msg.type && msg.type.startsWith('file-')) {
+                bubble.dataset.transferId = msg.transferId;
+                const fileHtml = createFileTransferHtml(msg);
+                bubble.innerHTML = fileHtml;
             } else {
                 bubble.innerHTML = `${msg.text}<span class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>`;
             }
@@ -1020,91 +1030,221 @@
             showView('main-app-view');
         });
 
+        // --- WebRTC FILE TRANSFER ---
+
         document.getElementById('attach-file-btn').addEventListener('click', () => {
             document.getElementById('file-input').click();
         });
 
-        document.getElementById('file-input').addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                uploadFile(file);
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileToSend = e.target.files[0];
+                initiateFileShare(fileToSend);
+            }
+        });
+        
+        function initiateFileShare(file) {
+            if (!file || !currentChatId) return;
+            const transferId = db.ref().push().key;
+
+            const fileMetadata = {
+                type: 'file-offer',
+                senderId: currentUser.uid,
+                transferId: transferId,
+                fileName: file.name,
+                fileSize: file.size,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            db.ref(`messages/${currentChatId}`).push(fileMetadata);
+            document.getElementById('file-input').value = '';
+        }
+        
+        messagesContainer.addEventListener('click', (e) => {
+            const target = e.target;
+            const transferId = target.dataset.transferId;
+            if (!transferId) return;
+
+            if (target.classList.contains('accept-file-btn')) {
+                target.parentElement.innerHTML = '<div class="file-status">Waiting for connection...</div>';
+                db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
+                    const msgId = Object.keys(snapshot.val())[0];
+                    db.ref(`messages/${currentChatId}/${msgId}/type`).set('file-accepted');
+                });
+                setupDataPeerConnection(transferId, false); // Receiver is not the initiator
+            }
+            if (target.classList.contains('decline-file-btn')) {
+                 db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
+                    const msgId = Object.keys(snapshot.val())[0];
+                    db.ref(`messages/${currentChatId}/${msgId}/type`).set('file-declined');
+                });
             }
         });
 
-        async function uploadFile(file) {
-            if (!currentChatId || !currentChatPeer) return;
-            if (file.size > 15 * 1024 * 1024) { 
-                showAlert('File Too Large', 'Please select a file smaller than 15MB.');
-                return;
+        function createFileTransferHtml(msg) {
+            const { fileName, fileSize, type } = msg;
+            const formattedSize = (fileSize / 1024 / 1024).toFixed(2);
+            let content = `<div class="file-info">${fileName} (${formattedSize} MB)</div>`;
+
+            switch(type) {
+                case 'file-offer':
+                    if (msg.senderId === currentUser.uid) {
+                        content += '<div class="file-status">Waiting for response...</div>';
+                    } else {
+                        content += `<div class="file-actions">
+                            <button class="action-btn accept-btn accept-file-btn" data-transfer-id="${msg.transferId}">Accept</button>
+                            <button class="action-btn decline-btn decline-file-btn" data-transfer-id="${msg.transferId}">Decline</button>
+                        </div>`;
+                    }
+                    break;
+                case 'file-accepted':
+                    content += '<div class="file-status">Accepted. Starting transfer...</div>';
+                    if(msg.senderId === currentUser.uid) setupDataPeerConnection(msg.transferId, true); // Sender is initiator
+                    break;
+                case 'file-declined':
+                    content += '<div class="file-status" style="color: var(--red-accent);">Transfer declined.</div>';
+                    break;
+                case 'file-progress':
+                     content += `<div class="progress-bar-container"><div class="progress-bar" style="width: ${msg.progress}%;"></div></div>`;
+                     content += `<div class="file-status">Transferring... ${msg.progress}%</div>`;
+                    break;
+                case 'file-complete':
+                     content += `<div class="file-status" style="color: var(--green-accent);">Transfer complete!</div>`;
+                    break;
+                 case 'file-failed':
+                    content += `<div class="file-status" style="color: var(--red-accent);">Transfer failed.</div>`;
+                    break;
             }
-            showLoader();
-
-            try {
-                const shortCode = Math.random().toString(36).substring(2, 8);
-                const filePath = `files/${currentChatId}/${Date.now()}_${file.name}`;
-                const fileRef = storage.ref(filePath);
-
-                await fileRef.put(file);
-                const downloadURL = await fileRef.getDownloadURL();
-
-                db.ref(`files/${shortCode}`).set({
-                    fileName: file.name,
-                    downloadURL: downloadURL,
-                    chatId: currentChatId,
-                    senderId: currentUser.uid,
-                    receiverId: currentChatPeer.uid,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                db.ref(`messages/${currentChatId}`).push({
-                    type: 'file',
-                    senderId: currentUser.uid,
-                    fileName: file.name,
-                    shortCode: shortCode,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                db.ref(`unreadCounts/${currentChatPeer.uid}/${currentChatId}`).transaction(c => (c || 0) + 1);
-
-            } catch (error) {
-                showAlert('Upload Failed', `There was an error: ${error.message}`);
-            } finally {
-                hideLoader();
-                document.getElementById('file-input').value = '';
-            }
+            return `<div class="file-transfer-container">${content}</div>`;
         }
 
-        messagesContainer.addEventListener('click', async (event) => {
-            if (event.target.classList.contains('download-btn')) {
-                const shortCode = event.target.dataset.shortCode;
-                if (shortCode) {
-                    downloadFile(shortCode);
-                }
-            }
-        });
+        async function setupDataPeerConnection(transferId, isInitiator) {
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            fileDataConnections[transferId] = { pc: pc, receivedBuffers: [], receivedSize: 0 };
+            
+            const signalRef = db.ref(`fileTransfers/${transferId}`);
+            
+            pc.onicecandidate = e => { if (e.candidate) signalRef.child(currentUser.uid).push(e.candidate.toJSON()); };
 
-        async function downloadFile(shortCode) {
-            showLoader();
-            try {
-                const fileSnap = await db.ref(`files/${shortCode}`).once('value');
-                if (fileSnap.exists()) {
-                    const fileData = fileSnap.val();
-                    const a = document.createElement('a');
-                    a.href = fileData.downloadURL;
-                    a.download = fileData.fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                } else {
-                    showAlert('File Not Found', 'The requested file could not be found or has expired.');
+            signalRef.child(currentChatPeer.uid).on('child_added', s => pc.addIceCandidate(new RTCIceCandidate(s.val())));
+            
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+                    updateFileMessageStatus(transferId, 'file-failed');
+                    cleanupDataConnection(transferId);
                 }
-            } catch (error) {
-                showAlert('Download Failed', `There was an error: ${error.message}`);
-            } finally {
-                hideLoader();
+            };
+            
+            if (isInitiator) {
+                const channel = pc.createDataChannel('fileChannel');
+                fileDataConnections[transferId].channel = channel;
+                channel.binaryType = 'arraybuffer';
+                channel.onopen = () => sendFileChunks(transferId);
+
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                await signalRef.update({ offer: offer.toJSON() });
+                
+                signalRef.child('answer').on('value', async (s) => {
+                    if (s.exists() && !pc.currentRemoteDescription) {
+                        await pc.setRemoteDescription(new RTCSessionDescription(s.val()));
+                    }
+                });
+            } else {
+                pc.ondatachannel = (e) => {
+                    const channel = e.channel;
+                    fileDataConnections[transferId].channel = channel;
+                    channel.binaryType = 'arraybuffer';
+                    channel.onmessage = (event) => handleFileChunk(transferId, event.data);
+                };
+                
+                const offerSnap = await signalRef.child('offer').once('value');
+                await pc.setRemoteDescription(new RTCSessionDescription(offerSnap.val()));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await signalRef.update({ answer: answer.toJSON() });
             }
         }
         
+        function sendFileChunks(transferId) {
+            const { pc, channel } = fileDataConnections[transferId];
+            const file = fileToSend;
+            let offset = 0;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                channel.send(e.target.result);
+                offset += e.target.result.byteLength;
+                
+                const progress = Math.round((offset / file.size) * 100);
+                updateFileMessageStatus(transferId, 'file-progress', { progress });
+
+                if (offset < file.size) {
+                    readSlice(offset);
+                } else {
+                     updateFileMessageStatus(transferId, 'file-complete');
+                }
+            };
+
+            const readSlice = o => {
+                const slice = file.slice(o, o + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
+            };
+            readSlice(0);
+        }
+        
+        function handleFileChunk(transferId, data) {
+            const conn = fileDataConnections[transferId];
+            conn.receivedBuffers.push(data);
+            conn.receivedSize += data.byteLength;
+
+            db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
+                const msgData = Object.values(snapshot.val())[0];
+                const progress = Math.round((conn.receivedSize / msgData.fileSize) * 100);
+                updateFileMessageStatus(transferId, 'file-progress', { progress });
+
+                if (conn.receivedSize === msgData.fileSize) {
+                    const receivedBlob = new Blob(conn.receivedBuffers);
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(receivedBlob);
+                    a.download = msgData.fileName;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    updateFileMessageStatus(transferId, 'file-complete');
+                    cleanupDataConnection(transferId);
+                }
+            });
+        }
+        
+        function updateFileMessageStatus(transferId, newStatus, extraData = {}) {
+            const bubble = document.querySelector(`[data-transfer-id="${transferId}"]`);
+            if (!bubble) return;
+            
+            db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
+                const msgId = Object.keys(snapshot.val())[0];
+                const msgData = { ...snapshot.val()[msgId], type: newStatus, ...extraData };
+                
+                // Update UI immediately
+                const newHtml = createFileTransferHtml(msgData);
+                bubble.innerHTML = newHtml;
+
+                // Update database
+                if (msgData.senderId === currentUser.uid) { // Only sender updates DB to avoid conflicts
+                     db.ref(`messages/${currentChatId}/${msgId}`).update({ type: newStatus, progress: extraData.progress || null });
+                }
+            });
+        }
+        
+        function cleanupDataConnection(transferId) {
+            const conn = fileDataConnections[transferId];
+            if (conn) {
+                conn.pc.close();
+                db.ref(`fileTransfers/${transferId}`).remove();
+                delete fileDataConnections[transferId];
+            }
+        }
+
+        // --- END WebRTC FILE TRANSFER ---
+
         const servers = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
         document.getElementById('voice-call-btn').addEventListener('click', () => initiateCall(false));
         document.getElementById('video-call-btn').addEventListener('click', () => initiateCall(true));
