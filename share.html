@@ -290,7 +290,6 @@
             width: 24px; height: 24px; fill: currentColor;
         }
 
-        /* WebRTC File Transfer Styles */
         .file-transfer-container { padding: 8px; }
         .file-info { font-weight: bold; margin-bottom: 8px; }
         .file-actions { display: flex; gap: 10px; margin-top: 8px; }
@@ -502,7 +501,7 @@
     <div id="contact-options-modal" class="modal-overlay"><div class="modal-content"><h3 id="contact-options-name"></h3><div class="menu-list"><button class="menu-item" id="contact-block-btn" style="color: var(--red-accent);">Block User</button><button class="menu-item" id="contact-delete-chat-btn" style="color: var(--red-accent);">Delete Chat</button><button class="menu-item" data-close>Cancel</button></div></div></div>
     <div id="forgot-password-modal" class="modal-overlay"><div class="modal-content"><h3>Reset Password</h3><p style="font-size: 0.9em; opacity: 0.8;">Enter your email, and we'll send you a link to get back into your account.</p><input type="email" id="reset-email-input" class="input-field" placeholder="Your Email Address"><p id="reset-error" class="modal-error"></p><div class="modal-btn-group"><button id="send-reset-link-btn" class="modal-btn primary">Send Link</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     
-    <div id="about-modal" class="modal-overlay"><div class="modal-content" style="text-align: left;"><h3>About HaiCalling</h3><p style="font-size: 0.9em;">Version: 4.0.0 (Futurestick)<br>P2P file sharing powered by WebRTC. UI/UX by Futurestick Technology.</p><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
+    <div id="about-modal" class="modal-overlay"><div class="modal-content" style="text-align: left;"><h3>About HaiCalling</h3><p style="font-size: 0.9em;">Version: 5.1 (Futurestick)<br>P2P file sharing powered by WebRTC. UI/UX by Futurestick Technology.</p><div class="modal-btn-group"><button class="modal-btn" data-close>Close</button></div></div></div>
     <div id="change-password-modal" class="modal-overlay"><div class="modal-content"><h3>Change Password</h3><input type="password" id="current-password-input" class="input-field" placeholder="Current Password"><input type="password" id="new-password-input" class="input-field" placeholder="New Password"><p id="change-password-error" class="modal-error"></p><div class="modal-btn-group"><button id="update-password-btn" class="modal-btn primary">Update</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
     <div id="delete-account-modal" class="modal-overlay"><div class="modal-content"><h3>Delete Account</h3><p>This action is irreversible. To confirm, please enter your password.</p><input type="password" id="delete-confirm-password-input" class="input-field" placeholder="Enter Your Password"><p id="delete-account-error" class="modal-error"></p><div class="modal-btn-group"><button id="confirm-delete-account-btn" class="modal-btn delete-btn">Delete My Account</button><button class="modal-btn" data-close>Cancel</button></div></div></div>
 
@@ -512,26 +511,16 @@
     
     <script>
     (() => {
-        // =================================================================================
-        // IMPORTANT: REPLACE THIS WITH YOUR FIREBASE PROJECT CONFIGURATION
-        // =================================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyBF8WGFStX62SCFqhMzqcvIFI0LZTJfd30",
             authDomain: "social-media-420.firebaseapp.com",
             databaseURL: "https://social-media-420-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "social-media-420",
-            storageBucket: "social-media-420.firebasestorage.app",
+            storageBucket: "social-media-420.appspot.com",
             messagingSenderId: "137093270524",
             appId: "1:137093270524:web:2847379ede160b6c73c079",
             measurementId: "G-G842MWTJKD"
         };
-        // =================================================================================
-
-        // Quick check if config is still placeholder
-        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-            document.body.innerHTML = `<div style="padding: 40px; text-align: center; font-size: 1.2em; color: white; background-color: #0a192f; height: 100vh; display: flex; align-items: center; justify-content: center;">Please update the firebaseConfig object in the script tag with your own Firebase project credentials.</div>`;
-            return;
-        }
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -543,9 +532,10 @@
         let typingTimeout = null;
         
         // --- WebRTC Data Transfer Globals ---
-        let fileDataConnections = {}; // Stores peer connections for file transfers
-        let fileToSend = null; // Holds the file object for the sender
-        const CHUNK_SIZE = 16384; // 16KB chunk size for file transfer
+        let fileDataConnections = {};
+        let fileToSend = null;
+        let fileTransfersListener = null;
+        const CHUNK_SIZE = 16384; 
 
         const loadingOverlay = document.getElementById('loading-overlay');
         const homePage = document.getElementById('home-page');
@@ -698,13 +688,13 @@
                 db.ref(`contacts/${currentUser.uid}`).off();
                 db.ref(`notifications/${currentUser.uid}`).off();
                 db.ref('calls').orderByChild('receiverId').equalTo(currentUser.uid).off();
-                db.ref('fileTransfers').off();
                 Object.values(messageListeners).forEach(ref => ref.off());
                 Object.values(unreadListeners).forEach(ref => ref.off());
                 Object.values(presenceListeners).forEach(ref => ref.off());
                 if(typingIndicatorListener) typingIndicatorListener.off();
+                if(fileTransfersListener) fileTransfersListener.off();
                 Object.keys(callListeners).forEach(key => callListeners[key].off());
-                messageListeners = {}; unreadListeners = {}; callListeners = {}; presenceListeners = {}; typingIndicatorListener = null;
+                messageListeners = {}; unreadListeners = {}; callListeners = {}; presenceListeners = {}; typingIndicatorListener = null; fileTransfersListener = null;
             }
             homePage.innerHTML = ''; notificationsPage.innerHTML = ''; callsPage.innerHTML = '';
         }
@@ -943,6 +933,7 @@
             });
             listenForTyping();
             loadMessages();
+            listenForFileTransfers();
         }
         
         function listenForTyping() {
@@ -986,7 +977,18 @@
             messagesRef.on('child_added', s => {
                 displayMessage(s.key, s.val());
                 if(s.val().senderId !== currentUser.uid && document.getElementById('chat-view').classList.contains('active')) {
-                    messageToneAudio.play().catch(e => {});
+                    if (!s.val().type || !s.val().type.startsWith('file-')) {
+                        messageToneAudio.play().catch(e => {});
+                    }
+                }
+            });
+            messagesRef.on('child_changed', s => {
+                const msgData = s.val();
+                if (msgData.transferId) {
+                    const bubble = document.getElementById(`msg-${s.key}`);
+                    if(bubble) {
+                        bubble.innerHTML = createFileTransferHtml(msgData);
+                    }
                 }
             });
         }
@@ -994,12 +996,11 @@
         function displayMessage(msgId, msg) {
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
-            bubble.dataset.messageId = msgId;
+            bubble.id = `msg-${msgId}`;
 
             if (msg.type && msg.type.startsWith('file-')) {
                 bubble.dataset.transferId = msg.transferId;
-                const fileHtml = createFileTransferHtml(msg);
-                bubble.innerHTML = fileHtml;
+                bubble.innerHTML = createFileTransferHtml(msg);
             } else {
                 bubble.innerHTML = `${msg.text}<span class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>`;
             }
@@ -1026,11 +1027,13 @@
             updateUserTypingStatus(false);
             if(messageListeners[currentChatId]) messageListeners[currentChatId].off();
             if(typingIndicatorListener) typingIndicatorListener.off();
+            if(fileTransfersListener) fileTransfersListener.off();
+            Object.keys(fileDataConnections).forEach(cleanupDataConnection);
             currentChatId = null; currentChatPeer = null; 
             showView('main-app-view');
         });
 
-        // --- WebRTC FILE TRANSFER ---
+        // --- WebRTC FILE TRANSFER (FIXED) ---
 
         document.getElementById('attach-file-btn').addEventListener('click', () => {
             document.getElementById('file-input').click();
@@ -1041,6 +1044,7 @@
                 fileToSend = e.target.files[0];
                 initiateFileShare(fileToSend);
             }
+            e.target.value = '';
         });
         
         function initiateFileShare(file) {
@@ -1055,8 +1059,9 @@
                 fileSize: file.size,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             };
-            db.ref(`messages/${currentChatId}`).push(fileMetadata);
-            document.getElementById('file-input').value = '';
+            db.ref(`messages/${currentChatId}`).push(fileMetadata).then(() => {
+                setupDataPeerConnection(transferId, true);
+            });
         }
         
         messagesContainer.addEventListener('click', (e) => {
@@ -1065,12 +1070,10 @@
             if (!transferId) return;
 
             if (target.classList.contains('accept-file-btn')) {
-                target.parentElement.innerHTML = '<div class="file-status">Waiting for connection...</div>';
                 db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
                     const msgId = Object.keys(snapshot.val())[0];
                     db.ref(`messages/${currentChatId}/${msgId}/type`).set('file-accepted');
                 });
-                setupDataPeerConnection(transferId, false); // Receiver is not the initiator
             }
             if (target.classList.contains('decline-file-btn')) {
                  db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
@@ -1081,8 +1084,8 @@
         });
 
         function createFileTransferHtml(msg) {
-            const { fileName, fileSize, type } = msg;
-            const formattedSize = (fileSize / 1024 / 1024).toFixed(2);
+            const { fileName, fileSize, type, progress } = msg;
+            const formattedSize = fileSize ? (fileSize / 1024 / 1024).toFixed(2) : 'N/A';
             let content = `<div class="file-info">${fileName} (${formattedSize} MB)</div>`;
 
             switch(type) {
@@ -1097,15 +1100,14 @@
                     }
                     break;
                 case 'file-accepted':
-                    content += '<div class="file-status">Accepted. Starting transfer...</div>';
-                    if(msg.senderId === currentUser.uid) setupDataPeerConnection(msg.transferId, true); // Sender is initiator
+                    content += '<div class="file-status">Connecting...</div>';
                     break;
                 case 'file-declined':
                     content += '<div class="file-status" style="color: var(--red-accent);">Transfer declined.</div>';
                     break;
                 case 'file-progress':
-                     content += `<div class="progress-bar-container"><div class="progress-bar" style="width: ${msg.progress}%;"></div></div>`;
-                     content += `<div class="file-status">Transferring... ${msg.progress}%</div>`;
+                     content += `<div class="progress-bar-container"><div class="progress-bar" style="width: ${progress || 0}%;"></div></div>`;
+                     content += `<div class="file-status">${msg.senderId === currentUser.uid ? 'Sending...' : 'Receiving...'} ${progress || 0}%</div>`;
                     break;
                 case 'file-complete':
                      content += `<div class="file-status" style="color: var(--green-accent);">Transfer complete!</div>`;
@@ -1117,18 +1119,52 @@
             return `<div class="file-transfer-container">${content}</div>`;
         }
 
-        async function setupDataPeerConnection(transferId, isInitiator) {
-            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-            fileDataConnections[transferId] = { pc: pc, receivedBuffers: [], receivedSize: 0 };
-            
-            const signalRef = db.ref(`fileTransfers/${transferId}`);
-            
-            pc.onicecandidate = e => { if (e.candidate) signalRef.child(currentUser.uid).push(e.candidate.toJSON()); };
+        function listenForFileTransfers() {
+            if (fileTransfersListener) fileTransfersListener.off();
+            fileTransfersListener = db.ref(`fileTransfers/${currentChatId}`);
 
-            signalRef.child(currentChatPeer.uid).on('child_added', s => pc.addIceCandidate(new RTCIceCandidate(s.val())));
+            fileTransfersListener.on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                const transferId = snapshot.key;
+                if (data.offer && !fileDataConnections[transferId]) { // Receiver gets an offer
+                    setupDataPeerConnection(transferId, false);
+                }
+            });
+
+            fileTransfersListener.on('child_changed', (snapshot) => {
+                const data = snapshot.val();
+                const transferId = snapshot.key;
+                handleSignalingData(transferId, data);
+            });
+        }
+        
+        async function handleSignalingData(transferId, data) {
+            const conn = fileDataConnections[transferId];
+            if (!conn) return;
+
+            if (data.answer && conn.pc.signalingState !== 'stable') {
+                await conn.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+            if (data.candidates && data.candidates[currentChatPeer.uid]) {
+                const candidates = data.candidates[currentChatPeer.uid];
+                for (const key in candidates) {
+                    await conn.pc.addIceCandidate(new RTCIceCandidate(candidates[key]));
+                }
+            }
+        }
+        
+        async function setupDataPeerConnection(transferId, isInitiator) {
+            console.log(`[${transferId}] Setting up PC as ${isInitiator ? 'Initiator' : 'Receiver'}`);
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            fileDataConnections[transferId] = { pc: pc, receivedBuffers: [], receivedSize: 0, transferId: transferId };
             
+            const signalRef = db.ref(`fileTransfers/${currentChatId}/${transferId}`);
+            
+            pc.onicecandidate = e => { if (e.candidate) signalRef.child('candidates').child(currentUser.uid).push(e.candidate.toJSON()); };
+
             pc.onconnectionstatechange = () => {
-                if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+                console.log(`[${transferId}] Connection State: ${pc.connectionState}`);
+                if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
                     updateFileMessageStatus(transferId, 'file-failed');
                     cleanupDataConnection(transferId);
                 }
@@ -1139,16 +1175,9 @@
                 fileDataConnections[transferId].channel = channel;
                 channel.binaryType = 'arraybuffer';
                 channel.onopen = () => sendFileChunks(transferId);
-
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
                 await signalRef.update({ offer: offer.toJSON() });
-                
-                signalRef.child('answer').on('value', async (s) => {
-                    if (s.exists() && !pc.currentRemoteDescription) {
-                        await pc.setRemoteDescription(new RTCSessionDescription(s.val()));
-                    }
-                });
             } else {
                 pc.ondatachannel = (e) => {
                     const channel = e.channel;
@@ -1156,38 +1185,35 @@
                     channel.binaryType = 'arraybuffer';
                     channel.onmessage = (event) => handleFileChunk(transferId, event.data);
                 };
-                
-                const offerSnap = await signalRef.child('offer').once('value');
-                await pc.setRemoteDescription(new RTCSessionDescription(offerSnap.val()));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                await signalRef.update({ answer: answer.toJSON() });
             }
         }
         
         function sendFileChunks(transferId) {
-            const { pc, channel } = fileDataConnections[transferId];
+            const conn = fileDataConnections[transferId];
+            if (!conn || !conn.channel) return updateFileMessageStatus(transferId, 'file-failed');
+            
             const file = fileToSend;
             let offset = 0;
-            
             const reader = new FileReader();
-            reader.onload = (e) => {
-                channel.send(e.target.result);
-                offset += e.target.result.byteLength;
-                
-                const progress = Math.round((offset / file.size) * 100);
-                updateFileMessageStatus(transferId, 'file-progress', { progress });
 
-                if (offset < file.size) {
-                    readSlice(offset);
-                } else {
-                     updateFileMessageStatus(transferId, 'file-complete');
-                }
-            };
-
-            const readSlice = o => {
+            function readSlice(o) {
                 const slice = file.slice(o, o + CHUNK_SIZE);
                 reader.readAsArrayBuffer(slice);
+            }
+            
+            reader.onload = (e) => {
+                try {
+                    conn.channel.send(e.target.result);
+                    offset += e.target.result.byteLength;
+                    const progress = Math.round((offset / file.size) * 100);
+                    updateFileMessageStatus(transferId, 'file-progress', { progress });
+                    if (offset < file.size) {
+                       readSlice(offset);
+                    }
+                } catch (err) {
+                    updateFileMessageStatus(transferId, 'file-failed');
+                    cleanupDataConnection(transferId);
+                }
             };
             readSlice(0);
         }
@@ -1202,12 +1228,14 @@
                 const progress = Math.round((conn.receivedSize / msgData.fileSize) * 100);
                 updateFileMessageStatus(transferId, 'file-progress', { progress });
 
-                if (conn.receivedSize === msgData.fileSize) {
+                if (conn.receivedSize >= msgData.fileSize) {
                     const receivedBlob = new Blob(conn.receivedBuffers);
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(receivedBlob);
                     a.download = msgData.fileName;
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
                     URL.revokeObjectURL(a.href);
                     updateFileMessageStatus(transferId, 'file-complete');
                     cleanupDataConnection(transferId);
@@ -1216,35 +1244,22 @@
         }
         
         function updateFileMessageStatus(transferId, newStatus, extraData = {}) {
-            const bubble = document.querySelector(`[data-transfer-id="${transferId}"]`);
-            if (!bubble) return;
-            
             db.ref(`messages/${currentChatId}`).orderByChild('transferId').equalTo(transferId).once('value', snapshot => {
+                if (!snapshot.exists()) return;
                 const msgId = Object.keys(snapshot.val())[0];
-                const msgData = { ...snapshot.val()[msgId], type: newStatus, ...extraData };
-                
-                // Update UI immediately
-                const newHtml = createFileTransferHtml(msgData);
-                bubble.innerHTML = newHtml;
-
-                // Update database
-                if (msgData.senderId === currentUser.uid) { // Only sender updates DB to avoid conflicts
-                     db.ref(`messages/${currentChatId}/${msgId}`).update({ type: newStatus, progress: extraData.progress || null });
-                }
+                db.ref(`messages/${currentChatId}/${msgId}`).update({ type: newStatus, progress: extraData.progress || null });
             });
         }
         
         function cleanupDataConnection(transferId) {
             const conn = fileDataConnections[transferId];
             if (conn) {
-                conn.pc.close();
-                db.ref(`fileTransfers/${transferId}`).remove();
+                if(conn.pc) conn.pc.close();
+                db.ref(`fileTransfers/${currentChatId}/${transferId}`).remove();
                 delete fileDataConnections[transferId];
             }
         }
-
-        // --- END WebRTC FILE TRANSFER ---
-
+        
         const servers = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
         document.getElementById('voice-call-btn').addEventListener('click', () => initiateCall(false));
         document.getElementById('video-call-btn').addEventListener('click', () => initiateCall(true));
